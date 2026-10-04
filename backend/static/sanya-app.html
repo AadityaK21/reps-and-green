@@ -1520,6 +1520,8 @@ body,button,input,textarea,select{font-family:'Inter',-apple-system,BlinkMacSyst
   .scrim.pop #sheet{transition:opacity .12s ease!important;opacity:0}
   .scrim.pop.show #sheet{opacity:1}
 }
+/* v12.5: Google's button lives in an iframe; matching its light colour scheme keeps it transparent in dark mode */
+#gisBtn,#gisBtn iframe{color-scheme:light}
 </style>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
