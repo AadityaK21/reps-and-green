@@ -1,0 +1,6 @@
+# ==== Dev / test dependencies ====
+-r requirements.txt
+pytest==8.3.4
+pytest-asyncio==0.25.0
+mongomock-motor==0.0.34      # in-memory async Mongo for API tests (no server needed)
+asgi-lifespan==2.1.0

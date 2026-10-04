@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reps &amp; Greens · Fat-loss coaching by Sanya Narang</title>
+<meta name="description" content="Workouts, meal plans and direct chat with fat-loss coach and nutritionist Sanya Narang, in one app.">
+<meta property="og:title" content="Reps & Greens · Coaching by Sanya Narang">
+<meta property="og:description" content="Workouts, meal plans and direct chat with your coach, in one app.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="/static/icon-512.png">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7F7F5;--surface:#FFFFFF;--ink:#111111;--ink-2:#3C3C3A;--soft:#6B6B67;--line:rgba(17,17,17,.09);--tint:#EFEFEC;
+  --green:#1F7A4D;--green-soft:#E7F2EB;--sage:#C1E1C1;--r:16px;--max:1120px;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 32px -16px rgba(0,0,0,.18)}
+@media (prefers-color-scheme:dark){:root{--bg:#0A0A0A;--surface:#151515;--ink:#F5F5F0;--ink-2:#D2D2CD;--soft:#9A9A95;--line:rgba(255,255,255,.09);--tint:#1E1E1E;
+  --green:#8FD3A6;--green-soft:#15241A;--shadow:0 16px 40px -20px rgba(0,0,0,.9)}}
+*{box-sizing:border-box}html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}img{display:block;max-width:100%}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 20px}
+.i{width:20px;height:20px;flex:none}
+h1,h2,h3{margin:0;letter-spacing:-.025em;line-height:1.1}
+p{margin:0}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--green)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 22px;border-radius:999px;font-weight:600;font-size:15px;border:1px solid transparent;cursor:pointer;transition:transform .15s,background .15s,opacity .15s;white-space:nowrap}
+.btn:active{transform:scale(.98)}
+.btn-dark{background:var(--ink);color:var(--bg)}.btn-dark:hover{opacity:.88}
+.btn-line{border-color:var(--line);background:var(--surface);color:var(--ink)}.btn-line:hover{border-color:var(--soft)}
+.btn-sm{height:38px;padding:0 16px;font-size:14px}
+/* nav */
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:saturate(1.6) blur(18px);-webkit-backdrop-filter:saturate(1.6) blur(18px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:28px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:-.01em}
+.brand img{width:30px;height:30px;border-radius:8px}
+.links{display:flex;gap:24px;margin-left:8px}.links a{font-size:14.5px;color:var(--ink-2);font-weight:500}.links a:hover{color:var(--ink)}
+.nav .cta{margin-left:auto;display:flex;gap:10px;align-items:center}
+.nav .login{font-size:14.5px;font-weight:600;color:var(--ink-2);padding:0 6px}
+@media(max-width:860px){.links{display:none}}
+.burger{display:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);align-items:center;justify-content:center;cursor:pointer}
+@media(max-width:860px){.burger{display:inline-flex}.nav .cta .btn{display:none}}
+.drawer{position:fixed;inset:0;z-index:80;background:var(--bg);padding:16px 20px 32px;display:flex;flex-direction:column;transform:translateY(-8px);opacity:0;pointer-events:none;transition:opacity .2s,transform .25s}
+.drawer.open{opacity:1;transform:none;pointer-events:auto}
+.drawer .top{display:flex;justify-content:space-between;align-items:center;height:48px}
+.drawer nav{display:flex;flex-direction:column;margin-top:18px}
+.drawer nav a{font-size:24px;font-weight:700;letter-spacing:-.02em;padding:14px 0;border-bottom:1px solid var(--line)}
+.drawer .acts{margin-top:auto;display:grid;gap:10px}.drawer .acts .btn{width:100%}
+.banner{display:none;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
+.banner img{width:40px;height:40px;border-radius:10px}.banner b{font-size:14px;display:block}.banner small{color:var(--soft);font-size:12.5px}
+.banner .x{background:none;border:none;color:var(--soft);font-size:20px;padding:0 4px;cursor:pointer}
+@media(max-width:860px){.banner.show{display:flex}}
+.getapp{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:48px}
+.getapp h2{font-size:clamp(28px,3.6vw,40px);font-weight:800;margin-top:10px}
+.getapp p{color:var(--ink-2);font-size:17px;margin-top:14px;max-width:520px}
+.getapp .actions{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
+.getapp .how{margin-top:22px;display:grid;gap:10px;font-size:14.5px;color:var(--soft)}.getapp .how div{display:flex;gap:10px;align-items:flex-start}.getapp .how .i{width:18px;height:18px;margin-top:2px;color:var(--ink-2)}
+.qr{justify-self:center;text-align:center}
+.qr .box{background:#fff;padding:16px;border-radius:20px;display:inline-block;box-shadow:var(--shadow)}
+.qr .box canvas,.qr .box img{display:block;width:180px;height:180px}
+.qr p{font-size:13.5px;color:var(--soft);margin-top:12px}
+@media(max-width:860px){.getapp{grid-template-columns:1fr;padding:32px 24px}.qr{display:none}}
+.modal{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;padding:16px}
+.modal.open{display:flex}@media(min-width:600px){.modal{align-items:center}}
+.modal .card{background:var(--surface);border-radius:20px;padding:24px;max-width:420px;width:100%}
+.modal h3{font-size:20px}.modal ol{margin:14px 0 20px;padding-left:20px;color:var(--ink-2);display:grid;gap:8px;font-size:15px}
+.fcols{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:32px;padding-bottom:36px;border-bottom:1px solid var(--line)}
+.fcols h4{margin:0 0 12px;font-size:13px;font-weight:600;color:var(--ink);letter-spacing:.02em}
+.fcols a{display:block;padding:5px 0;color:var(--soft);font-size:14px}.fcols a:hover{color:var(--ink)}
+.fcols .brand{margin-bottom:12px;display:flex!important;padding:0}.fcols p{color:var(--soft);font-size:14px;max-width:280px}
+.fbottom{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:22px}
+@media(max-width:860px){.fcols{grid-template-columns:1fr 1fr}.fcols>div:first-child{grid-column:1 / -1}}
+@media(max-width:420px){.nav .login{display:none}}
+/* hero */
+.hero{padding:72px 0 40px}
+.hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.hero h1{font-size:clamp(40px,6vw,68px);font-weight:800;letter-spacing:-.035em}
+.hero h1 span{color:var(--green)}
+.hero p.lead{font-size:clamp(17px,1.6vw,19px);color:var(--ink-2);margin-top:20px;max-width:520px}
+.hero .actions{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap}
+.hero .note{margin-top:18px;font-size:13.5px;color:var(--soft);display:flex;align-items:center;gap:8px}
+.hero-img{position:relative;aspect-ratio:4/5;border-radius:28px;overflow:hidden;background:#1a1a1a;box-shadow:var(--shadow)}
+.hero-img img{width:100%;height:100%;object-fit:cover}
+.hero-card{position:absolute;left:18px;right:18px;bottom:18px;background:rgba(255,255,255,.92);color:#111;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:18px;padding:16px 18px;display:flex;gap:14px;align-items:center}
+.hero-card .ck{width:40px;height:40px;border-radius:50%;background:#34C759;color:#fff;display:grid;place-items:center;flex:none}
+.hero-card b{display:block;font-size:15px}.hero-card small{color:#55554F;font-size:13px}
+@media(max-width:860px){.hero{padding:40px 0 24px}.hero .wrap{grid-template-columns:1fr;gap:32px}.hero-img{aspect-ratio:4/3.4}}
+/* sections */
+section{padding:88px 0}
+.sec-head{max-width:640px;margin-bottom:40px}
+.sec-head h2{font-size:clamp(30px,4vw,44px);font-weight:800;margin-top:10px}
+.sec-head p{color:var(--ink-2);font-size:17px;margin-top:14px}
+@media(max-width:860px){section{padding:60px 0}}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:s}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:26px}
+.step .n{width:36px;height:36px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:700;font-size:15px}
+.step h3{font-size:19px;margin-top:20px}.step p{color:var(--soft);margin-top:8px;font-size:15px}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.feat{padding:26px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line)}
+.feat .fi{width:44px;height:44px;border-radius:12px;background:var(--tint);display:grid;place-items:center}
+.feat h3{font-size:18px;margin-top:18px}.feat p{color:var(--soft);font-size:15px;margin-top:8px}
+@media(max-width:860px){.steps,.features{grid-template-columns:1fr}}
+@media(min-width:600px) and (max-width:860px){.features{grid-template-columns:1fr 1fr}}
+.alt{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.alt .step,.alt .feat,.alt .plan,.alt .prod{background:var(--bg)}
+/* programs */
+.programs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.prog{border-radius:var(--r);overflow:hidden;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column}
+.prog .ph{aspect-ratio:16/11;background:#1a1a1a;position:relative}.prog .ph img{width:100%;height:100%;object-fit:cover}
+.prog .tag{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.94);color:#111;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px}
+.prog .pb{padding:20px;display:flex;flex-direction:column;gap:6px;flex:1}
+.prog h3{font-size:18px}.prog p{color:var(--soft);font-size:14.5px}
+.prog .btn{margin-top:14px;align-self:flex-start}
+@media(max-width:860px){.programs{grid-template-columns:1fr}}
+/* timetable */
+.tt{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.tt-row{display:grid;grid-template-columns:72px 1fr auto auto;gap:20px;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
+.tt-row:last-child{border-bottom:none}
+.tt-day{font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--green)}
+.tt-name{font-weight:600;font-size:16px}.tt-time,.tt-dur{color:var(--soft);font-size:14.5px;font-variant-numeric:tabular-nums}
+@media(max-width:600px){.tt-row{grid-template-columns:52px 1fr;gap:4px 14px}.tt-time{grid-column:2}.tt-dur{display:none}}
+/* plans */
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
+.plan{border:1px solid var(--line);border-radius:var(--r);padding:28px;background:var(--surface);display:flex;flex-direction:column}
+.plan.pop{border-color:var(--ink);box-shadow:var(--shadow)}
+.plan .pn{font-weight:600;font-size:15px;color:var(--ink-2);display:flex;justify-content:space-between;align-items:center}
+.plan .badge{font-size:11.5px;font-weight:700;background:var(--ink);color:var(--bg);padding:4px 9px;border-radius:999px}
+.plan .price{font-size:40px;font-weight:800;letter-spacing:-.03em;margin-top:14px;font-variant-numeric:tabular-nums}
+.plan .price small{font-size:15px;font-weight:500;color:var(--soft);letter-spacing:0}
+.plan ul{list-style:none;padding:0;margin:22px 0 26px;display:grid;gap:11px;flex:1}
+.plan li{display:flex;gap:10px;font-size:15px;color:var(--ink-2)}.plan li .i{color:var(--green);width:18px;height:18px;margin-top:2px}
+@media(max-width:860px){.plans{grid-template-columns:1fr}}
+/* shop */
+.shop{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.prod{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+.prod .pi{aspect-ratio:1;background:var(--tint);position:relative}.prod .pi img{width:100%;height:100%;object-fit:cover}
+.prod .pd{padding:14px 16px 16px}.prod h3{font-size:15px;font-weight:600;letter-spacing:-.01em;line-height:1.3;min-height:2.6em}
+.prod .pr{margin-top:8px;display:flex;gap:8px;align-items:baseline}.prod .pr b{font-size:16px}.prod .pr s{color:var(--soft);font-size:13.5px}
+@media(max-width:860px){.shop{grid-template-columns:1fr 1fr}}
+/* about */
+.about{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.about .img{aspect-ratio:1;border-radius:28px;overflow:hidden;background:#1a1a1a}.about .img img{width:100%;height:100%;object-fit:cover}
+.about p{color:var(--ink-2);font-size:17px;margin-top:16px}
+.about .actions{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+@media(max-width:860px){.about{grid-template-columns:1fr;gap:28px}}
+/* faq */
+.faq{max-width:760px}
+details{border-bottom:1px solid var(--line);padding:4px 0}
+summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 0;font-weight:600;font-size:17px}
+summary::-webkit-details-marker{display:none}
+summary .i{transition:transform .2s;color:var(--soft)}details[open] summary .i{transform:rotate(45deg)}
+details p{color:var(--ink-2);padding:0 0 20px;font-size:15.5px;max-width:640px}
+/* cta band + footer */
+.band{background:var(--ink);color:var(--bg);border-radius:28px;padding:56px;display:flex;justify-content:space-between;align-items:center;gap:28px;flex-wrap:wrap}
+.band h2{font-size:clamp(28px,3.6vw,40px);font-weight:800;max-width:560px}
+.band p{opacity:.75;margin-top:10px;font-size:16.5px}
+.band .btn-dark{background:var(--bg);color:var(--ink)}
+@media(max-width:600px){.band{padding:36px 26px;border-radius:22px}}
+footer{padding:48px 0 56px;color:var(--soft);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+footer nav{display:flex;gap:20px;flex-wrap:wrap}footer a:hover{color:var(--ink)}
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s cubic-bezier(.2,.8,.2,1)}.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="banner" id="banner"><img src="/static/icon-192.png" alt=""><div style="flex:1"><b>Reps &amp; Greens</b><small>Install the app on your phone</small></div><button class="btn btn-dark btn-sm" onclick="installApp()">Install</button><button class="x" aria-label="Dismiss" onclick="dismissBanner()">×</button></div>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="/"><img src="/static/icon-192.png" alt="">Reps &amp; Greens</a>
+  <nav class="links" aria-label="Sections"><a href="#how">How it works</a><a href="#programs">Programs</a><a href="#classes">Classes</a><a href="#pricing">Pricing</a><a href="#shop">Shop</a><a href="#app">Get the app</a></nav>
+  <div class="cta"><a class="login" href="/app">Log in</a><a class="btn btn-dark btn-sm" href="/app">Get started</a><button class="burger" aria-label="Open menu" onclick="drawer(true)"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16" /><path d="M4 12h16" /><path d="M4 19h16" /></svg></button></div>
+</div></header>
+
+<div class="drawer" id="drawer" role="dialog" aria-label="Menu">
+  <div class="top"><a class="brand" href="/" onclick="drawer(false)"><img src="/static/icon-192.png" alt="">Reps &amp; Greens</a><button class="burger" style="display:inline-flex" aria-label="Close menu" onclick="drawer(false)"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></button></div>
+  <nav><a href="#how" onclick="drawer(false)">How it works</a><a href="#programs" onclick="drawer(false)">Programs</a><a href="#classes" onclick="drawer(false)">Classes</a><a href="#pricing" onclick="drawer(false)">Pricing</a><a href="#shop" onclick="drawer(false)">Shop</a><a href="#app" onclick="drawer(false)">Get the app</a></nav>
+  <div class="acts"><a class="btn btn-dark" href="/app">Get started</a><a class="btn btn-line" href="/app">Log in</a></div>
+</div>
+<div class="modal" id="iosModal" onclick="if(event.target===this)this.classList.remove('open')"><div class="card"><h3 id="mTitle">Install on iPhone</h3><ol id="mSteps"><li>Open this page in <b>Safari</b>.</li><li>Tap the <b>Share</b> button at the bottom.</li><li>Choose <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol><button class="btn btn-dark" style="width:100%" onclick="document.getElementById('iosModal').classList.remove('open')">Got it</button></div></div>
+<main>
+<section class="hero" style="padding-top:72px"><div class="wrap">
+  <div class="reveal">
+    <div class="eyebrow">Coaching by Sanya Narang</div>
+    <h1 style="margin-top:16px">Lose fat and keep it off, <span>with your coach in your pocket.</span></h1>
+    <p class="lead">Reps &amp; Greens puts your daily workouts, your meal plan and a direct line to fat-loss coach and nutritionist Sanya Narang in one app.</p>
+    <div class="actions"><a class="btn btn-dark" href="/app">Start for free <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a><a class="btn btn-line" href="https://docs.google.com/forms/d/e/1FAIpQLScu21Sx8kaIg-818CH4n_p8y6CLtoRjk1Q-qKLyh3Uztl77AQ/viewform" target="_blank" rel="noopener">Apply for 1:1 coaching</a></div>
+    <div class="note"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg> Works on any phone or laptop, in the browser or as an app.</div>
+  </div>
+  <div class="hero-img reveal"><img src="https://images.unsplash.com/photo-1649887974297-4be052375a67?w=1000&q=70&auto=format&fit=crop" alt="Woman training with dumbbells" fetchpriority="high">
+    <div class="hero-card"><div class="ck"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></div><div><b>Today: Lower Body Burn</b><small>5 exercises · about 28 minutes</small></div></div>
+  </div>
+</div></section>
+
+<section id="how" class="alt"><div class="wrap">
+  <div class="sec-head reveal"><div class="eyebrow">How it works</div><h2>Start in two minutes</h2><p>No complicated setup. Three questions and your plan is ready.</p></div>
+  <div class="steps"><div class="step reveal"><div class="n">1</div><h3>Tell Sanya your goal</h3><p>Answer three quick questions: your goal, how active you are and how many days you can train.</p></div><div class="step reveal"><div class="n">2</div><h3>Get your plan</h3><p>Your workouts, calorie target and meal plan are ready in the app straight away.</p></div><div class="step reveal"><div class="n">3</div><h3>Show up daily</h3><p>Log workouts, meals and water. Sanya sees your progress and adjusts your plan.</p></div></div>
+</div></section>
+
+<section id="features"><div class="wrap">
+  <div class="sec-head reveal"><div class="eyebrow">Inside the app</div><h2>Everything you need, nothing you don't</h2></div>
+  <div class="features"><div class="feat reveal"><div class="fi"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg></div><h3>Workouts for today</h3><p>A clear session every day, set by Sanya. Tick off each exercise as you go.</p></div><div class="feat reveal"><div class="fi"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg></div><h3>Meal plan and macros</h3><p>Your meals, calories and protein for the day, with one tap to log each meal.</p></div><div class="feat reveal"><div class="fi"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></svg></div><h3>Chat with Sanya</h3><p>Ask about food, form or progress. Messages go straight to her, not a bot.</p></div><div class="feat reveal"><div class="fi"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="m9 15 2 2 4-4" /></svg></div><h3>Live classes</h3><p>Book HIIT, strength and mobility sessions from the weekly timetable.</p></div><div class="feat reveal"><div class="fi"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="m19 9-5 5-4-4-3 3" /></svg></div><h3>Progress you can see</h3><p>Weigh-ins, streaks and a daily score that shows how consistent you are.</p></div><div class="feat reveal"><div class="fi"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 10a4 4 0 0 1-8 0" /><path d="M3.103 6.034h17.794" /><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" /></svg></div><h3>Coach-approved shop</h3><p>Protein, vitamins and gear Sanya actually uses, with a 15% member price.</p></div></div>
+</div></section>
+
+<section id="programs" class="alt"><div class="wrap">
+  <div class="sec-head reveal"><div class="eyebrow">Programs</div><h2>Pick a program that fits your week</h2><p>Join a live batch with others, or go at your own pace.</p></div>
+  <div class="programs"><article class="prog reveal"><div class="ph"><img src="https://images.unsplash.com/photo-1649887974297-4be052375a67?w=700&q=70&auto=format&fit=crop" alt="" loading="lazy"><span class="tag">Live batch</span></div><div class="pb"><h3>21-Day Fat Loss Kickstart</h3><p>Live batch · Starts Monday</p><a class="btn btn-line btn-sm" href="/app">Ask to join</a></div></article><article class="prog reveal"><div class="ph"><img src="https://images.unsplash.com/photo-1758599878908-596c2042f563?w=700&q=70&auto=format&fit=crop" alt="" loading="lazy"><span class="tag">Self-paced</span></div><div class="pb"><h3>Strong & Lean: 8 Weeks</h3><p>Self-paced · 32 sessions</p><a class="btn btn-line btn-sm" href="/app">Ask to join</a></div></article><article class="prog reveal"><div class="ph"><img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=700&q=70&auto=format&fit=crop" alt="" loading="lazy"><span class="tag">Live on Zoom</span></div><div class="pb"><h3>Morning Movement</h3><p>Live on Zoom · 6 AM daily</p><a class="btn btn-line btn-sm" href="/app">Ask to join</a></div></article></div>
+</div></section>
+
+<section id="classes"><div class="wrap">
+  <div class="sec-head reveal"><div class="eyebrow">Live classes</div><h2>This week's timetable</h2><p>Book your spot in the app. All times are IST.</p></div>
+  <div class="tt reveal"><div class="tt-row"><div class="tt-day">Mon</div><div class="tt-name">HIIT Fat Burn</div><div class="tt-time">6:00 AM</div><div class="tt-dur">45 min</div></div><div class="tt-row"><div class="tt-day">Tue</div><div class="tt-name">Strength · Upper</div><div class="tt-time">7:00 AM</div><div class="tt-dur">50 min</div></div><div class="tt-row"><div class="tt-day">Wed</div><div class="tt-name">HIIT Fat Burn</div><div class="tt-time">6:00 AM</div><div class="tt-dur">45 min</div></div><div class="tt-row"><div class="tt-day">Fri</div><div class="tt-name">Mobility & Core</div><div class="tt-time">8:00 AM</div><div class="tt-dur">40 min</div></div></div>
+</div></section>
+
+<section id="pricing" class="alt"><div class="wrap">
+  <div class="sec-head reveal"><div class="eyebrow">Pricing</div><h2>Free to start. Upgrade when you're ready.</h2></div>
+  <div class="plans" id="plans">
+    <div class="plan reveal"><div class="pn">Free</div><div class="price">₹0</div><ul>
+      <li><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>Daily workout plan</li><li><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>Meal plan and calorie tracking</li><li><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>Chat with Sanya</li><li><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>Book live classes</li></ul>
+      <a class="btn btn-line" href="/app">Start for free</a></div>
+  </div>
+</div></section>
+
+<section id="shop"><div class="wrap">
+  <div class="sec-head reveal"><div class="eyebrow">Shop</div><h2>What Sanya actually uses</h2><p>Members save 15% on every order. Checkout is in the app.</p></div>
+  <div class="shop" id="shopGrid"></div>
+  <div style="margin-top:28px" class="reveal"><a class="btn btn-line" href="/app">Shop in the app <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a></div>
+</div></section>
+
+<section id="about" class="alt"><div class="wrap about">
+  <div class="img reveal"><img src="https://images.unsplash.com/photo-1662045010188-b5e91a7f504b?w=900&q=70&auto=format&fit=crop" alt="Training session" loading="lazy"></div>
+  <div class="reveal"><div class="eyebrow">Your coach</div><h2 style="font-size:clamp(30px,4vw,44px);font-weight:800;margin-top:10px">Sanya Narang</h2>
+    <p>Sanya is a fat-loss coach and nutritionist. She builds plans around real Indian food and the time you actually have, and adjusts them as you progress.</p>
+    <p>Follow her on Instagram to see her work and what she shares day to day.</p>
+    <div class="actions"><a class="btn btn-dark" href="https://www.instagram.com/sanyanarang/" target="_blank" rel="noopener"><svg class="i" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"/></svg> @sanyanarang</a><a class="btn btn-line" href="https://docs.google.com/forms/d/e/1FAIpQLScu21Sx8kaIg-818CH4n_p8y6CLtoRjk1Q-qKLyh3Uztl77AQ/viewform" target="_blank" rel="noopener">Apply for 1:1 coaching</a></div>
+  </div>
+</div></section>
+
+<section id="app"><div class="wrap">
+  <div class="getapp reveal">
+    <div><div class="eyebrow">Get the app</div><h2>Take Sanya with you</h2>
+      <p>Install Reps &amp; Greens on your phone for a full-screen app with its own icon, notifications from Sanya, and one tap to log your day.</p>
+      <div class="actions"><button class="btn btn-dark" id="installBtn" onclick="installApp()"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /></svg> Install the app</button><a class="btn btn-line" href="/app">Open in browser</a></div>
+      <div class="how"><div><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg><span><b>Android:</b> tap Install, or open the menu in Chrome and choose Install app.</span></div><div><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg><span><b>iPhone:</b> in Safari, tap Share, then Add to Home Screen.</span></div><div><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2" /><line x1="8" x2="16" y1="21" y2="21" /><line x1="12" x2="12" y1="17" y2="21" /></svg><span><b>Laptop:</b> works in any browser, or install it from Chrome or Edge.</span></div></div>
+    </div>
+    <div class="qr"><div class="box"><img src="/qr/app.svg" alt="QR code to open the app" width="180" height="180"></div><p>Scan with your phone's camera</p></div>
+  </div>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <div class="sec-head reveal"><div class="eyebrow">FAQ</div><h2>Questions, answered</h2></div>
+  <div class="faq"><details class="reveal"><summary>How do I talk to Sanya?<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg></summary><p>Open the Coach tab in the app and send a message. It goes straight to her inbox, and she replies there.</p></details><details class="reveal"><summary>Is the app free?<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg></summary><p>Yes. Your workout plan, meal tracking, chat and class booking are free. Premium adds personalised plans and priority replies.</p></details><details class="reveal"><summary>Can I change my plan later?<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg></summary><p>Yes. Message Sanya in the app and she will update your workouts or calories.</p></details><details class="reveal"><summary>Is my payment safe?<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg></summary><p>Payments go through Razorpay. Reps & Greens never sees or stores your card details.</p></details><details class="reveal"><summary>Can I use it on my laptop?<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg></summary><p>Yes. Log in at this website on any phone or laptop. Your data stays in sync.</p></details></div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <div class="band reveal"><div><h2>Your first workout is ready when you are.</h2><p>Free to start. Takes about two minutes.</p></div><a class="btn btn-dark" href="/app">Get started <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a></div>
+</div></section>
+</main>
+
+<footer><div class="wrap" style="display:block">
+  <div class="fcols">
+    <div><a class="brand" href="/"><img src="/static/icon-192.png" alt="">Reps &amp; Greens</a><p>Fat-loss coaching by Sanya Narang. Workouts, meal plans and a direct line to your coach.</p></div>
+    <div><h4>Product</h4><a href="#how">How it works</a><a href="#programs">Programs</a><a href="#classes">Live classes</a><a href="#pricing">Pricing</a><a href="#shop">Shop</a></div>
+    <div><h4>App</h4><a href="/app">Open the app</a><a href="#app">Install on your phone</a><a href="/app">Log in</a><a href="/app">Create an account</a></div>
+    <div><h4>Coaching</h4><a href="https://docs.google.com/forms/d/e/1FAIpQLScu21Sx8kaIg-818CH4n_p8y6CLtoRjk1Q-qKLyh3Uztl77AQ/viewform" target="_blank" rel="noopener">Apply for 1:1 coaching</a><a href="https://www.instagram.com/sanyanarang/" target="_blank" rel="noopener">Instagram</a><a href="#faq">FAQ</a></div>
+  </div>
+  <div class="fbottom"><div>© <span id="yr">2026</span> Reps &amp; Greens. All rights reserved.</div><div>Made in India</div></div>
+</div></footer>
+
+<script>
+document.getElementById('yr').textContent=new Date().getFullYear();
+function drawer(o){document.getElementById('drawer').classList.toggle('open',o);document.body.style.overflow=o?'hidden':''}
+const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+let deferred=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e});
+addEventListener('appinstalled',()=>{deferred=null;dismissBanner();const b=document.getElementById('installBtn');if(b)b.textContent='Installed'});
+async function installApp(){
+  if(standalone){location.href='/app';return}
+  if(deferred){deferred.prompt();const r=await deferred.userChoice;deferred=null;if(r.outcome==='accepted')dismissBanner();return}
+  const m=document.getElementById('iosModal');
+  if(!isIOS){document.getElementById('mTitle').textContent='Install the app';document.getElementById('mSteps').innerHTML='<li>Open this site in <b>Chrome</b> or <b>Edge</b>.</li><li>Open the browser menu (⋮).</li><li>Choose <b>Install app</b> or <b>Add to Home screen</b>.</li>'}
+  m.classList.add('open')}
+function dismissBanner(){document.getElementById('banner').classList.remove('show');try{localStorage.setItem('rng_banner','0')}catch(e){}}
+try{if(!standalone&&localStorage.getItem('rng_banner')!=='0')document.getElementById('banner').classList.add('show')}catch(e){}
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const CHECK='<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>';
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{rootMargin:'0px 0px -8% 0px'});
+const watch=()=>document.querySelectorAll('.reveal:not(.in)').forEach(el=>io.observe(el));watch();
+const FALLBACK_PLANS=[{code:'premium_monthly',name:'Premium Monthly',price:499,interval:'monthly',features:['Personalised plans','Priority coach chat','Advanced analytics','No ads']},
+  {code:'premium_annual',name:'Premium Annual',price:4499,interval:'annual',features:['Everything in Monthly','2 months free','Quarterly plan reviews']}];
+function renderPlans(ps){const box=document.getElementById('plans');
+  box.insertAdjacentHTML('beforeend',ps.map((p,i)=>`<div class="plan reveal${i===0?' pop':''}"><div class="pn">${esc(p.name)}${i===0?'<span class="badge">Most popular</span>':''}</div><div class="price">₹${Number(p.price).toLocaleString('en-IN')}<small> / ${p.interval==='annual'?'year':'month'}</small></div><ul>${(p.features||[]).map(f=>`<li>${CHECK}${esc(f)}</li>`).join('')}</ul><a class="btn ${i===0?'btn-dark':'btn-line'}" href="/app">Choose ${esc(p.name.replace('Premium ','').toLowerCase())}</a></div>`).join(''));watch()}
+fetch('/subscriptions/plans').then(r=>r.ok?r.json():Promise.reject()).then(ps=>renderPlans(ps.length?ps:FALLBACK_PLANS)).catch(()=>renderPlans(FALLBACK_PLANS));
+fetch('/shop/products').then(r=>r.ok?r.json():Promise.reject()).then(ps=>{const g=document.getElementById('shopGrid');
+  const top=ps.filter(p=>p.image).slice(0,4);if(!top.length){document.getElementById('shop').remove();return}
+  g.innerHTML=top.map(p=>`<a class="prod reveal" href="/app"><div class="pi"><img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" onerror="this.remove()"></div><div class="pd"><h3>${esc(p.name)}</h3><div class="pr"><b>₹${Number(p.price).toLocaleString('en-IN')}</b>${p.mrp>p.price?`<s>₹${Number(p.mrp).toLocaleString('en-IN')}</s>`:''}</div></div></a>`).join('');watch()}).catch(()=>document.getElementById('shop').remove());
+</script>
+</body>
+</html>

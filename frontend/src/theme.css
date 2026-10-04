@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --canvas:#FCFBF8; --ink:#17150F; --ink-soft:#8C867B; --card:#FFFFFF;
+  --line:#EDEAE2; --tint:#F4F1EA; --green:#3E9B5F; --green-soft:#EEF4EA;
+  --coral:#FF5C39; --coral-soft:#FDEEE7; --blue:#2E7DF7; --plum:#7A3E6B;
+}
+[data-theme="dark"] {
+  --canvas:#0D0C0A; --ink:#F3EFE8; --ink-soft:#948E83; --card:#171512;
+  --line:#272320; --tint:#1A1815; --green-soft:#16241A; --coral-soft:#2A1712;
+}
+html, body { background: var(--canvas); color: var(--ink); font-family: Inter, sans-serif; }
+.card { @apply bg-card border border-line rounded-xl2 shadow-sm; }
+.btn { @apply w-full flex items-center justify-center gap-2 font-bold text-[15px] rounded-2xl px-4 py-3.5 transition active:scale-[.98]; }
+.btn-ink { @apply bg-ink text-canvas; }
+.btn-brand { @apply bg-brand text-white; }
+.btn-ghost { @apply bg-card border border-line text-ink; }
+.field { @apply w-full rounded-xl border border-line bg-card px-4 py-3.5 text-[15px] outline-none focus:border-ink; }
+.seglabel { @apply text-[11.5px] font-bold uppercase tracking-wide text-inksoft mt-6 mb-2 px-1; }
