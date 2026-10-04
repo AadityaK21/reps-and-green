@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     MONGO_URL: str = "mongodb://localhost:27017"
-    DB_NAME: str = "repsandgreens"
+    DB_NAME: str = "repsandgreens"   # kept: the live database already uses this name
     JWT_SECRET: str = "dev-secret-change-me"
     JWT_EXPIRES_MIN: int = 10080          # access token lifetime (legacy default; lower in prod + use refresh)
     REFRESH_EXPIRES_DAYS: int = 30        # refresh token lifetime
@@ -33,7 +33,8 @@ class Settings(BaseSettings):
     AWS_S3_REGION: str = "ap-south-1"
     CLOUDINARY_URL: str = ""
 
-    COACH_EMAIL: str = "sanya@repsandgreens.in"
+    COACH_EMAIL: str = "coach@merova.app"
+    COACH_NAME: str = "Merova Coach"          # shown to clients in the app
     COACH_PASSWORD: str = "change-me"
     RAZORPAY_KEY_ID: str = ""
     RAZORPAY_KEY_SECRET: str = ""
@@ -41,7 +42,7 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_WA_FROM: str = "whatsapp:+14155238886"
     RESEND_API_KEY: str = ""
-    EMAIL_FROM: str = "Reps & Greens <hello@repsandgreens.in>"
+    EMAIL_FROM: str = "Merova Fit <hello@merova.app>"
     GOOGLE_CLIENT_ID: str = ""
     FRONTEND_ORIGIN: str = "http://localhost:5173"
     ENV: str = "development"              # development | production

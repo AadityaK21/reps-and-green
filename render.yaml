@@ -1,4 +1,4 @@
-# Reps & Greens — Render Blueprint (backend API)
+# Merova Fit — Render Blueprint (website, app and API)
 # Render → New → Blueprint → connect this repo → Render reads this file.
 # Docs: https://render.com/docs/blueprint-spec
 #
@@ -27,13 +27,15 @@ services:
       # ---- set these in the Render dashboard (marked sync:false = not stored in git) ----
       - key: MONGO_URL              # mongodb+srv://... from MongoDB Atlas
         sync: false
-      - key: FRONTEND_ORIGIN        # your site's URL, e.g. https://repsandgreens.in (or the onrender.com URL)
+      - key: FRONTEND_ORIGIN        # your site's URL, e.g. https://fit.merova.app
         sync: false
       - key: BASE_URL               # same URL; used in password-reset links and the QR code
         sync: false
       - key: COACH_EMAIL
         sync: false
       - key: COACH_PASSWORD
+        sync: false
+      - key: COACH_NAME             # coach name clients see in the app, e.g. Merova Coach
         sync: false
       # ---- optional integrations: leave blank to stay in safe mock mode ----
       - key: RAZORPAY_KEY_ID
@@ -50,7 +52,7 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
-      - key: EMAIL_FROM             # e.g. Reps & Greens <hello@repsandgreens.in> (verified in Resend)
+      - key: EMAIL_FROM             # e.g. Merova Fit <hello@merova.app> (verified in Resend)
         sync: false
       - key: JWT_EXPIRES_MIN
         value: "1440"

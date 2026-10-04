@@ -32,7 +32,7 @@ def test_percent_promo():
 
 
 def test_flat_promo_with_min_subtotal_not_met():
-    promo = Promo("SANYA200", "flat", 200, min_subtotal=100000)
+    promo = Promo("MEROVA200", "flat", 200, min_subtotal=100000)
     disc, notes = promo_discount_for(4842, promo)
     assert disc == 0
     assert notes and "minimum" in notes[0].lower()

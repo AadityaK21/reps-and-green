@@ -155,11 +155,11 @@ async def test_meal_plan_defaults_and_coach_assignment(client):
 
 
 async def test_coach_inbox_unread_and_reply(client):
-    """A client message shows up unread in Sanya's inbox; her reply reaches the client."""
+    """A client message shows up unread in the coach inbox; her reply reaches the client."""
     from app.security import hash_pw
     import app.db as db
     c = await _register(client, "chatter@test.com")
-    await db.users.insert_one({"name": "Sanya", "email": "coach@test.com", "pw": hash_pw(STRONG),
+    await db.users.insert_one({"name": "Coach", "email": "coach@test.com", "pw": hash_pw(STRONG),
                                "role": "coach", "verified": True})
     coach = (await client.post("/auth/login", json={"email": "coach@test.com", "password": STRONG})).json()
     assert (await client.post("/chat/send", json={"text": "<b>hi</b> coach"}, headers=_auth(c))).status_code == 200

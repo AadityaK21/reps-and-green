@@ -16,7 +16,7 @@ async def book(data: BookingIn, user=Depends(get_current_user)):
     res = await bookings.insert_one(doc)
     p = await prefs.find_one({"user_id": user["id"]}) or {}
     if user.get("phone") and p.get("notif_whatsapp", True):
-        await send_whatsapp(user["phone"], f"Reps & Greens: your {data.kind.replace('_',' ')} with Sanya is booked for {data.slot}.")
+        await send_whatsapp(user["phone"], f"Merova Fit: your {data.kind.replace('_',' ')} with your coach is booked for {data.slot}.")
     await notify(user["id"], "booking", "Class booked", f"{data.kind.replace('_', ' ').title()} — {data.slot}. WhatsApp reminder set.")
     return {"id": str(res.inserted_id), "status": "confirmed"}
 

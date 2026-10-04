@@ -1,4 +1,4 @@
-"""Reps & Greens API — application entrypoint.
+"""Merova Fit API — application entrypoint.
 
 Wires routers, middleware (request IDs, timing, security headers, CORS, gzip),
 global error handling, and serves the single-file app at the root URL.
@@ -37,10 +37,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Reps & Greens API",
+    title="Merova Fit API",
     version="2.0.0",
     description=(
-        "Production backend for the Reps & Greens coaching app: auth & sessions, "
+        "Production backend for the Merova Fit coaching app: auth & sessions, "
         "workouts, goals, nutrition, cart & payments, subscriptions, achievements, "
         "search, admin, and real-time events."
     ),
@@ -99,8 +99,9 @@ app.include_router(realtime.router)
 
 @app.get("/config")
 async def public_config():
-    """Public, non-secret settings the web app needs (Google client id, Razorpay key id)."""
-    return {"google_client_id": settings.GOOGLE_CLIENT_ID, "razorpay_key_id": settings.RAZORPAY_KEY_ID}
+    """Public, non-secret settings the web app needs (Google client id, Razorpay key id, coach name)."""
+    return {"google_client_id": settings.GOOGLE_CLIENT_ID, "razorpay_key_id": settings.RAZORPAY_KEY_ID,
+            "coach_name": settings.COACH_NAME}
 
 
 @app.get("/health")

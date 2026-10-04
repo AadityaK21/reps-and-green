@@ -1,6 +1,6 @@
-# Reps & Greens — Full-Stack (Phase 1–6 foundation)
+# Merova Fit — Full-Stack (Phase 1–6 foundation)
 
-Two-sided fitness coaching platform for Sanya (coach) + clients.
+Two-sided fitness coaching platform (coach + clients), the first app from Merova.
 React + TypeScript + Tailwind frontend · FastAPI + MongoDB backend · JWT auth · WebSocket chat · Razorpay · Twilio WhatsApp · Resend email.
 
 ## Quick start

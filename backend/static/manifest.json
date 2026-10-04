@@ -1,6 +1,6 @@
 {
-  "name": "Reps & Greens \u00b7 Coaching by Sanya Narang",
-  "short_name": "Reps & Greens",
+  "name": "Merova Fit",
+  "short_name": "Merova Fit",
   "start_url": "/app",
   "display": "standalone",
   "background_color": "#0A0A0A",
@@ -25,7 +25,7 @@
   ],
   "scope": "/",
   "id": "/app",
-  "description": "Workouts, meal plans and direct chat with coach Sanya Narang.",
+  "description": "Workouts, meal plans and direct chat with your coach.",
   "categories": [
     "health",
     "fitness",

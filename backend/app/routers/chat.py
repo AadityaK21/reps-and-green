@@ -1,4 +1,4 @@
-"""Client <-> coach chat: REST history/send, a live WebSocket, and Sanya's inbox.
+"""Client <-> coach chat: REST history/send, a live WebSocket, and the coach inbox.
 
 Every client has one thread (`coach:<client_id>`). Client messages carry `seen`
 so the coach inbox can show unread counts; the coach marks a thread read when
@@ -50,7 +50,7 @@ def _out(m: dict) -> dict:
 
 
 async def _client_says(client: dict, text: str) -> dict:
-    """Store a client message and deliver it to the client's devices and Sanya's inbox."""
+    """Store a client message and deliver it to the client's devices and the coach inbox."""
     cid = str(client["_id"]) if "_id" in client else client["id"]
     doc = {"thread": thread_id(cid), "from": "client", "text": text, "ts": time.time(), "seen": False}
     await messages.insert_one(doc)
@@ -60,7 +60,7 @@ async def _client_says(client: dict, text: str) -> dict:
 
 
 async def _coach_says(client_id: str, text: str) -> dict:
-    """Store Sanya's reply, deliver it live, and leave an in-app notification for the client."""
+    """Store the coach's reply, deliver it live, and leave an in-app notification for the client."""
     client = await users.find_one({"_id": oid(client_id, "client id"), "role": "client"})
     if not client:
         raise HTTPException(404, "Client not found")
@@ -68,7 +68,7 @@ async def _coach_says(client_id: str, text: str) -> dict:
     await messages.insert_one(doc)
     await manager.push(thread_id(client_id), _out(doc))
     await manager.push("coach-inbox", {"thread_client": client_id, "client_name": client.get("name", ""), **_out(doc)})
-    await notify(client_id, "message", "New message from Sanya", text[:140])
+    await notify(client_id, "message", "New message from your coach", text[:140])
     return doc
 
 

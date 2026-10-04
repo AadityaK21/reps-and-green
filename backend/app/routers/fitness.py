@@ -20,14 +20,14 @@ DEFAULT_PLAN = {
 DEFAULT_MEALS = [
     {"slot": "Breakfast", "name": "Veggie oats + 2 eggs", "note": "High-protein start", "kcal": 320, "protein_g": 24, "carbs_g": 34, "fat_g": 9},
     {"slot": "Lunch", "name": "Dal · brown rice · salad", "note": "Balanced plate", "kcal": 480, "protein_g": 22, "carbs_g": 62, "fat_g": 11},
-    {"slot": "Snack", "name": "Whey shake + banana", "note": "Reps & Greens whey", "kcal": 160, "protein_g": 25, "carbs_g": 18, "fat_g": 2},
+    {"slot": "Snack", "name": "Whey shake + banana", "note": "Whey protein", "kcal": 160, "protein_g": 25, "carbs_g": 18, "fat_g": 2},
     {"slot": "Dinner", "name": "Grilled paneer + greens", "note": "Light & filling", "kcal": 420, "protein_g": 30, "carbs_g": 14, "fat_g": 24},
 ]
 
 
 @router.get("/meal-plan")
 async def meal_plan(user=Depends(get_current_user)):
-    """The client's current meal plan: the latest one Sanya assigned, else the starter plan."""
+    """The client's current meal plan: the latest one the coach assigned, else the starter plan."""
     m = await meals.find_one({"client_id": user["id"], "meals.0": {"$exists": True}}, sort=[("_id", -1)])
     if m:
         return {"daily_kcal": m.get("daily_kcal"), "meals": m["meals"]}

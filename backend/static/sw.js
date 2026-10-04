@@ -1,7 +1,7 @@
-/* Reps & Greens service worker: makes the app installable and opens it offline.
+/* Merova Fit service worker: makes the app installable and opens it offline.
    Pages are network-first (always the newest version when online); icons are cached;
    API calls are never cached. */
-const V = 'rng-v12';
+const V = 'merova-v13';
 const SHELL = ['/app', '/static/manifest.json', '/static/icon-192.png', '/static/icon-512.png', '/static/favicon-32.png'];
 
 self.addEventListener('install', e => {

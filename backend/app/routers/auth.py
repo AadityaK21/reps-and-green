@@ -136,7 +136,7 @@ async def otp_request(data: OTPRequestIn):
         {"$set": {"code": code, "exp": time.time() + 600, "attempts": 0,
                   "expires_at": datetime.now(timezone.utc) + timedelta(minutes=10)}},
         upsert=True)
-    r = await send_email(data.email, "Your Reps & Greens verification code",
+    r = await send_email(data.email, f"{code} is your Merova Fit code",
                          f"<p>Your code is <b>{code}</b>. Valid for 10 minutes.</p>")
     out = {"ok": True}
     if r.get("mock"):
@@ -186,7 +186,7 @@ async def forgot_password(data: ForgotPasswordIn):
             "expires_at": datetime.now(timezone.utc) + timedelta(minutes=settings.RESET_TOKEN_EXPIRES_MIN),
         })
         link = f"{settings.BASE_URL}/reset-password?token={token}"
-        await send_email(u["email"], "Reset your Reps & Greens password",
+        await send_email(u["email"], "Reset your Merova Fit password",
                          f'<p>Tap to reset your password (valid {settings.RESET_TOKEN_EXPIRES_MIN} min):</p>'
                          f'<p><a href="{link}">{link}</a></p>')
     return {"ok": True, "message": "If that email exists, a reset link is on its way."}

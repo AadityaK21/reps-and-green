@@ -80,6 +80,6 @@ async def broadcast(data: BroadcastIn, coach=Depends(require_coach)):
         if u.get("phone") and p.get("notif_whatsapp", True):
             await send_whatsapp(u["phone"], data.text)
             sent += 1
-        await notify(str(u["_id"]), "broadcast", "Message from Sanya", data.text)
+        await notify(str(u["_id"]), "broadcast", "Message from your coach", data.text)
     await broadcasts.insert_one({"text": data.text, "segment": data.segment, "sent": sent, "ts": time.time()})
     return {"ok": True, "sent": sent}
