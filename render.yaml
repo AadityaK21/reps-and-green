@@ -14,7 +14,7 @@ services:
     healthCheckPath: /health
     # Bind Render's injected $PORT and run a single worker so the in-memory
     # rate limiter / realtime hub / cache stay consistent (no Redis on free tier).
-    dockerCommand: sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --proxy-headers --forwarded-allow-ips='*'"
+    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --proxy-headers --forwarded-allow-ips=*
     autoDeploy: true
     envVars:
       - key: ENV

@@ -29,7 +29,8 @@ EXPOSE 8000
 
 # Container-native health check hits the app's /health endpoint
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -fsS http://localhost:8000/health || exit 1
+    CMD curl -fsS http://localhost:${PORT:-8000}/health || exit 1
 
-# Multiple workers for throughput; tune to CPU count in production.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# Uses $PORT when the host sets one (Render does), else 8000. One worker keeps the
+# in-memory rate limiter and live chat consistent.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --proxy-headers --forwarded-allow-ips=*
