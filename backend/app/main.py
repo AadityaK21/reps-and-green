@@ -183,3 +183,18 @@ async def site():
 async def web_app():
     """The coaching app (phones and laptops)."""
     return _page("sanya-app.html")
+
+
+@app.get("/privacy", include_in_schema=False)
+async def privacy():
+    return _page("privacy.html")
+
+
+@app.get("/terms", include_in_schema=False)
+async def terms():
+    return _page("terms.html")
+
+
+@app.get("/refund", include_in_schema=False)
+async def refund():
+    return _page("refund.html")
