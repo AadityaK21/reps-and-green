@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
 from ..config import settings
 from ..db import otps, pw_resets, refresh_tokens, users
-from ..deps import get_current_user
+from ..deps import get_current_user, get_optional_user
 from ..integrations.apple_oauth import verify_identity_token
 from ..integrations.resend_email import send_email
 from ..logging_conf import get_logger
@@ -23,7 +23,7 @@ from ..models import (
     AppleIn, ChangePasswordIn, ForgotPasswordIn, GoogleIn, LoginIn, OTPRequestIn,
     OTPVerifyIn, RefreshIn, RegisterIn, ResetPasswordIn,
 )
-from ..ratelimit import RateLimiter
+from ..ratelimit import RateLimiter, check_rate, client_ip
 from ..security import hash_pw, hash_token, random_token, verify_pw
 from ..services import sessions
 from ..utils import oid
@@ -31,10 +31,18 @@ from ..utils import oid
 log = get_logger("auth")
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# per-IP limits (first line of defence) ...
 login_limit = RateLimiter(times=10, seconds=60, scope="login")
 register_limit = RateLimiter(times=5, seconds=60, scope="register")
 otp_limit = RateLimiter(times=3, seconds=60, scope="otp")
+otp_verify_limit = RateLimiter(times=10, seconds=60, scope="otp-verify")
 reset_limit = RateLimiter(times=4, seconds=300, scope="reset")
+social_limit = RateLimiter(times=20, seconds=60, scope="social")
+# ... plus per-account limits, which hold even if many IPs are used against one email
+LOGIN_PER_EMAIL = (10, 15 * 60)      # 10 password attempts per 15 minutes
+OTP_SEND_PER_EMAIL = (5, 60 * 60)    # 5 codes per hour
+OTP_CHECK_PER_EMAIL = (15, 60 * 60)  # 15 code checks per hour
+RESET_PER_EMAIL = (3, 60 * 60)       # 3 reset emails per hour
 
 DEFAULTS = {"role": "client", "quiz": None, "daily_kcal": 1500, "phone": "", "dob": "",
             "gender": "", "height_cm": None, "streak": 0, "verified": False, "banned": False}
@@ -49,9 +57,7 @@ def public_user(u) -> dict:
 
 def _meta(request: Request) -> dict:
     ua = request.headers.get("User-Agent", "")[:200]
-    ip = (request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-          or (request.client.host if request.client else ""))
-    return {"device": ua, "ip": ip}
+    return {"device": ua, "ip": client_ip(request)}
 
 
 async def _auth_response(u: dict, request: Request) -> dict:
@@ -72,6 +78,7 @@ async def register(data: RegisterIn, request: Request):
 
 @router.post("/login", dependencies=[Depends(login_limit)])
 async def login(data: LoginIn, request: Request):
+    await check_rate("login-email", data.email, *LOGIN_PER_EMAIL)
     u = await users.find_one({"email": data.email.lower()})
     if not u or not verify_pw(data.password, u.get("pw", "")):
         log.warning("failed login attempt for %s", data.email.lower())
@@ -130,6 +137,7 @@ async def revoke_session(jti: str, user=Depends(get_current_user)):
 # ---- email OTP verification ----
 @router.post("/otp/request", dependencies=[Depends(otp_limit)])
 async def otp_request(data: OTPRequestIn):
+    await check_rate("otp-send-email", data.email, *OTP_SEND_PER_EMAIL)
     code = f"{random.SystemRandom().randint(0, 999999):06d}"
     await otps.update_one(
         {"email": data.email.lower()},
@@ -149,9 +157,10 @@ async def otp_request(data: OTPRequestIn):
     return out
 
 
-@router.post("/otp/verify", dependencies=[Depends(otp_limit)])
-async def otp_verify(data: OTPVerifyIn, request: Request):
+@router.post("/otp/verify", dependencies=[Depends(otp_verify_limit)])
+async def otp_verify(data: OTPVerifyIn, request: Request, me=Depends(get_optional_user)):
     email = data.email.lower()
+    await check_rate("otp-check-email", email, *OTP_CHECK_PER_EMAIL)
     rec = await otps.find_one({"email": email})
     if not rec or rec["exp"] < time.time():
         raise HTTPException(401, "Invalid or expired code")
@@ -167,16 +176,31 @@ async def otp_verify(data: OTPVerifyIn, request: Request):
                "created_at": time.time()}
         res = await users.insert_one(doc)
         u = await users.find_one({"_id": res.inserted_id})
+    elif not u.get("verified") and (not me or me["id"] != str(u["_id"])):
+        # Someone proved they own this inbox without being signed in to the account.
+        # If the account was registered by someone else first (account pre-hijacking),
+        # make sure that person's password and sessions stop working.
+        await _claim_unverified(u)
     await otps.delete_one({"email": email})
     await users.update_one({"_id": u["_id"]}, {"$set": {"verified": True}})
     u["verified"] = True
     return await _auth_response(u, request)
 
 
+async def _claim_unverified(u: dict) -> None:
+    """Hand an unverified account to whoever just proved they own its email."""
+    if u.get("pw"):
+        await users.update_one({"_id": u["_id"]}, {"$set": {"pw": ""}})
+        u["pw"] = ""
+    await sessions.revoke_all(str(u["_id"]))
+    log.warning("unverified account %s claimed by verified email owner", u["_id"])
+
+
 # ---- forgot / reset / change password ----
 @router.post("/forgot-password", dependencies=[Depends(reset_limit)])
 async def forgot_password(data: ForgotPasswordIn):
     """Email a reset link. Always returns ok so we never leak which emails exist."""
+    await check_rate("reset-email", data.email, *RESET_PER_EMAIL)
     u = await users.find_one({"email": data.email.lower()})
     if u:
         token = random_token()
@@ -197,9 +221,15 @@ async def reset_password(data: ResetPasswordIn):
     rec = await pw_resets.find_one({"token_hash": hash_token(data.token)})
     if not rec:
         raise HTTPException(400, "Invalid or expired reset link")
+    exp = rec.get("expires_at")
+    if exp is not None and exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)  # Mongo hands datetimes back without a zone
+    if exp is None or exp < datetime.now(timezone.utc):
+        await pw_resets.delete_one({"_id": rec["_id"]})  # don't wait for the TTL sweep
+        raise HTTPException(400, "Invalid or expired reset link")
     await users.update_one({"_id": oid(rec["user_id"], "user id")},
-                           {"$set": {"pw": hash_pw(data.password)}})
-    await pw_resets.delete_one({"_id": rec["_id"]})
+                           {"$set": {"pw": hash_pw(data.password), "verified": True}})
+    await pw_resets.delete_many({"user_id": rec["user_id"]})  # every other link dies too
     await sessions.revoke_all(rec["user_id"])  # force re-login everywhere after a reset
     return {"ok": True}
 
@@ -215,7 +245,7 @@ async def change_password(data: ChangePasswordIn, user=Depends(get_current_user)
 
 
 # ---- social sign-in ----
-@router.post("/google")
+@router.post("/google", dependencies=[Depends(social_limit)])
 async def google(data: GoogleIn, request: Request):
     if not settings.GOOGLE_CLIENT_ID:
         raise HTTPException(503, "Google sign-in isn't set up yet")
@@ -233,8 +263,11 @@ async def google(data: GoogleIn, request: Request):
     return await _auth_response(u, request)
 
 
-@router.post("/apple")
+@router.post("/apple", dependencies=[Depends(social_limit)])
 async def apple(data: AppleIn, request: Request):
+    if not settings.APPLE_CLIENT_ID:
+        # without our own app id we can't check the token was issued for Merova Fit
+        raise HTTPException(503, "Apple sign-in isn't set up yet")
     try:
         claims = await verify_identity_token(data.id_token)
     except ValueError as e:
@@ -253,4 +286,10 @@ async def _upsert_social(email: str, name: str | None) -> dict:
         u = await users.find_one({"_id": res.inserted_id})
     if u.get("banned"):
         raise HTTPException(403, "This account has been suspended")
+    if not u.get("verified"):
+        # Google/Apple just proved this person owns the email. Lock out anyone who
+        # registered it first with a password, then mark the account verified.
+        await _claim_unverified(u)
+        await users.update_one({"_id": u["_id"]}, {"$set": {"verified": True}})
+        u["verified"] = True
     return u

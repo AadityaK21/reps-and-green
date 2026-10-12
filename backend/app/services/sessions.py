@@ -13,13 +13,19 @@ from ..db import refresh_tokens
 from ..security import decode_token, hash_token, make_access, make_refresh, new_jti
 
 
-async def issue(user_id: str, role: str, *, device: str = "", ip: str = "") -> dict:
-    """Create a fresh access+refresh pair and persist the session record."""
+async def issue(user_id: str, role: str, *, device: str = "", ip: str = "",
+                family: str | None = None) -> dict:
+    """Create a fresh access+refresh pair and persist the session record.
+
+    `family` ties every token produced by refreshing one login together, so a replayed
+    (already rotated) refresh token can shut the whole chain down.
+    """
     jti = new_jti()
     refresh = make_refresh(user_id, jti)
     access = make_access(user_id, role, sid=jti)
     await refresh_tokens.insert_one({
         "jti": jti,
+        "family": family or jti,
         "user_id": user_id,
         "token_hash": hash_token(refresh),
         "device": device[:200],
@@ -45,19 +51,27 @@ async def rotate(refresh_jwt: str, *, device: str = "", ip: str = "") -> dict:
         raise ValueError("Not a refresh token")
     jti = payload.get("jti", "")
     rec = await refresh_tokens.find_one({"jti": jti})
-    if not rec or rec.get("revoked"):
+    if not rec:
+        raise ValueError("Session no longer valid")
+    family = rec.get("family") or jti
+    if rec.get("revoked"):
+        if rec.get("rotated"):
+            # an already-used refresh token came back: someone copied it. End every
+            # session in this login chain so neither copy keeps working.
+            await refresh_tokens.update_many({"family": family}, {"$set": {"revoked": True}})
         raise ValueError("Session no longer valid")
     if rec.get("token_hash") != hash_token(refresh_jwt):
         # hash mismatch => token reuse/forgery; nuke the whole session family
         await refresh_tokens.update_one({"jti": jti}, {"$set": {"revoked": True}})
         raise ValueError("Session no longer valid")
-    await refresh_tokens.update_one({"jti": jti}, {"$set": {"revoked": True}})
+    await refresh_tokens.update_one({"jti": jti}, {"$set": {"revoked": True, "rotated": True}})
     # role can change (e.g. promotion); read it fresh from the token's user on issue
     from ..db import users
     from ..utils import oid
     u = await users.find_one({"_id": oid(payload["sub"], "subject")})
-    role = (u or {}).get("role", "client")
-    return await issue(payload["sub"], role, device=device, ip=ip)
+    if not u or u.get("banned"):
+        raise ValueError("Session no longer valid")
+    return await issue(payload["sub"], u.get("role", "client"), device=device, ip=ip, family=family)
 
 
 async def revoke(user_id: str, refresh_jwt: str) -> bool:

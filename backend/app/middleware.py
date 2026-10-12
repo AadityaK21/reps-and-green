@@ -15,6 +15,10 @@ SECURITY_HEADERS = {
     "X-Frame-Options": "SAMEORIGIN",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    # popups allowed so Google sign-in and Razorpay checkout keep working
+    "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    # no other site may frame the app (clickjacking); no <base> or plugin tricks
+    "Content-Security-Policy": "frame-ancestors 'self'; base-uri 'self'; object-src 'none'",
 }
 
 
@@ -22,7 +26,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
     """Attach a request ID, time every request, log access, add security headers."""
 
     async def dispatch(self, request: Request, call_next):
-        rid = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
+        rid = (request.headers.get("X-Request-ID") or "")[:64] or uuid.uuid4().hex[:12]
         start = time.perf_counter()
         try:
             response = await call_next(request)

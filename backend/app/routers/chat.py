@@ -11,11 +11,19 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from ..db import messages, users
 from ..deps import _load_user, get_current_user, require_coach
 from ..models import MessageIn
+from ..ratelimit import check_rate_sync
 from ..utils import oid
 from .notifications import notify
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 MAX_LEN = 2000
+CLIENT_MSGS_PER_MIN = 20   # plenty for a real conversation, stops floods
+COACH_MSGS_PER_MIN = 60
+
+
+def _throttle(user: dict) -> None:
+    per_min = CLIENT_MSGS_PER_MIN if user.get("role") == "client" else COACH_MSGS_PER_MIN
+    check_rate_sync("chat", user["id"], per_min, 60)
 
 
 def thread_id(client_id: str) -> str:
@@ -94,6 +102,7 @@ async def history(limit: int = 200, user=Depends(get_current_user)):
 async def send(data: MessageIn, user=Depends(get_current_user)):
     if user["role"] != "client":
         raise HTTPException(403, "Use the inbox to reply to clients")
+    _throttle(user)
     await _client_says(user, _clean(data.text))
     return {"ok": True}
 
@@ -140,6 +149,7 @@ async def mark_read(client_id: str, coach=Depends(require_coach)):
 
 @router.post("/send/{client_id}")
 async def coach_send(client_id: str, data: MessageIn, coach=Depends(require_coach)):
+    _throttle(coach)
     await _coach_says(client_id, _clean(data.text))
     return {"ok": True}
 
@@ -158,10 +168,13 @@ async def ws_endpoint(ws: WebSocket, token: str = ""):
     try:
         while True:
             data = await ws.receive_json()
+            if not isinstance(data, dict):
+                continue
             text = str(data.get("text", ""))[:MAX_LEN].strip()
             if not text:
                 continue
             try:
+                _throttle(u)
                 if is_client:
                     await _client_says(u, text)
                 elif u.get("role") == "coach":
@@ -169,4 +182,6 @@ async def ws_endpoint(ws: WebSocket, token: str = ""):
             except HTTPException as e:
                 await ws.send_json({"error": e.detail})
     except WebSocketDisconnect:
+        pass
+    finally:
         manager.disconnect(key, ws)

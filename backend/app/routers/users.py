@@ -1,8 +1,10 @@
 """Current-user endpoints: profile, onboarding quiz, preferences, account deletion."""
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..db import (device_tokens, meal_logs, measurements, notifications, prefs, refresh_tokens,
-                  subscriptions, user_badges, user_xp, users, water_logs, weight_logs, workout_logs)
+from ..db import (bookings, carts, device_tokens, files, meal_logs, measurements, messages,
+                  notifications, otps, prefs, pw_resets, refresh_tokens, subscriptions,
+                  user_badges, user_xp, users, water_logs, weight_logs, workout_logs)
+from ..integrations import storage
 from ..deps import get_current_user
 from ..models import DeleteAccountIn, PreferencesIn, ProfileUpdate, QuizIn
 from ..security import verify_pw
@@ -67,12 +69,27 @@ async def delete_account(data: DeleteAccountIn, user=Depends(get_current_user)):
     if user.get("pw"):
         if not data.password or not verify_pw(data.password, user["pw"]):
             raise HTTPException(401, "Password is incorrect")
-    uid = user["id"]
-    # purge everything owned by this user
-    await sessions.revoke_all(uid)
-    for col in (workout_logs, meal_logs, water_logs, weight_logs, measurements,
-                notifications, user_xp, user_badges, device_tokens, prefs, subscriptions):
-        await col.delete_many({"user_id": uid})
-    await refresh_tokens.delete_many({"user_id": uid})
-    await users.delete_one({"_id": oid(uid, "user id")})
+    await purge_user(user)
     return {"ok": True, "message": "Your account and data have been deleted."}
+
+
+async def purge_user(user: dict) -> None:
+    """Delete an account and everything personal tied to it.
+
+    Orders and payment records stay (Indian tax law requires keeping them); they hold
+    no fitness data. Everything else promised in the privacy policy goes: logs,
+    chats, bookings, photos, sessions and sign-in codes.
+    """
+    uid = user["id"] if "id" in user else str(user["_id"])
+    await sessions.revoke_all(uid)
+    async for f in files.find({"user_id": uid}):
+        await storage.delete({"backend": f.get("backend", "local"),
+                              "key": f.get("storage_key", f.get("name", ""))})
+    for col in (workout_logs, meal_logs, water_logs, weight_logs, measurements, notifications,
+                user_xp, user_badges, device_tokens, prefs, subscriptions, bookings, carts,
+                files, pw_resets, refresh_tokens):
+        await col.delete_many({"user_id": uid})
+    await messages.delete_many({"thread": f"coach:{uid}"})
+    if user.get("email"):
+        await otps.delete_many({"email": user["email"]})
+    await users.delete_one({"_id": oid(uid, "user id")})

@@ -6,18 +6,24 @@ CRUD, platform analytics (DAU / retention / completion / revenue / subscriptions
 and sending notifications to a segment or a single user. Every mutating action is
 written to an audit log.
 """
+import re
 import time
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from ..cache import delete as cache_delete
 from ..db import (audit, meal_logs, orders, products, subscriptions, transactions,
                   users, water_logs, workout_logs)
+from ..config import settings
+from ..db import ping
 from ..deps import require_admin
 from ..models import AdminNotifyIn, AdminUserPatch, ProductIn
+from ..ratelimit import client_ip
+from ..realtime_hub import hub
 from ..utils import clamp_page, oid
 from .notifications import notify
+from .users import purge_user
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -34,8 +40,9 @@ async def list_users(q: str = Query(default=""), limit: int = 50, skip: int = 0,
     limit, skip = clamp_page(limit, skip)
     query: dict = {}
     if q.strip():
-        query = {"$or": [{"name": {"$regex": q, "$options": "i"}},
-                         {"email": {"$regex": q, "$options": "i"}}]}
+        rx = re.escape(q.strip()[:80])  # search text is matched literally, never as a pattern
+        query = {"$or": [{"name": {"$regex": rx, "$options": "i"}},
+                         {"email": {"$regex": rx, "$options": "i"}}]}
     total = await users.count_documents(query)
     out = []
     async for u in users.find(query).sort("created_at", -1).skip(skip).limit(limit):
@@ -94,9 +101,10 @@ async def unban_user(user_id: str, admin=Depends(require_admin)):
 async def delete_user(user_id: str, admin=Depends(require_admin)):
     if user_id == admin["id"]:
         raise HTTPException(400, "You can't delete your own admin account here")
-    r = await users.delete_one({"_id": oid(user_id, "user id")})
-    if not r.deleted_count:
+    u = await users.find_one({"_id": oid(user_id, "user id")})
+    if not u:
         raise HTTPException(404, "User not found")
+    await purge_user(u)
     await _audit(admin, "delete_user", user_id)
     return {"ok": True}
 
@@ -183,6 +191,38 @@ async def analytics(admin=Depends(require_admin)):
                     "aov": round(rev_week / tx_week) if tx_week else 0},
         "subscriptions": {"active": active_subs, "trialing": trialing,
                           "conversion_pct": round(active_subs / total_users * 100) if total_users else 0},
+    }
+
+
+# ---------------- diagnostics ----------------
+@router.get("/health")
+async def health_detail(admin=Depends(require_admin)):
+    """Which integrations are switched on. Kept off the public /health on purpose."""
+    return {
+        "db": await ping(), "env": settings.ENV,
+        "razorpay": bool(settings.RAZORPAY_KEY_ID), "razorpay_webhook": bool(settings.RAZORPAY_WEBHOOK_SECRET),
+        "twilio": bool(settings.TWILIO_ACCOUNT_SID), "resend": bool(settings.RESEND_API_KEY),
+        "google": bool(settings.GOOGLE_CLIENT_ID), "apple": bool(settings.APPLE_CLIENT_ID),
+        "redis": bool(settings.REDIS_URL), "storage": settings.STORAGE_BACKEND,
+        "ws_connections": hub.connection_count(),
+    }
+
+
+@router.get("/debug/ip")
+async def debug_ip(request: Request, admin=Depends(require_admin)):
+    """Open this from your own phone/laptop: the right CLIENT_IP_MODE is the one whose
+    value matches your real public IP. Rate limits depend on it."""
+    parts = [p.strip() for p in request.headers.get("X-Forwarded-For", "").split(",") if p.strip()]
+    return {
+        "x_forwarded_for": request.headers.get("X-Forwarded-For", ""),
+        "x_real_ip": request.headers.get("X-Real-IP", ""),
+        "true_client_ip": request.headers.get("True-Client-IP", ""),
+        "cf_connecting_ip": request.headers.get("CF-Connecting-IP", ""),
+        "socket": request.client.host if request.client else "",
+        "modes": {"xff-last": parts[-1] if parts else "", "xff-first": parts[0] if parts else "",
+                  "direct": request.client.host if request.client else ""},
+        "current_mode": settings.CLIENT_IP_MODE,
+        "used_for_rate_limits": client_ip(request),
     }
 
 

@@ -14,7 +14,8 @@ services:
     healthCheckPath: /health
     # Bind Render's injected $PORT and run a single worker so the in-memory
     # rate limiter / realtime hub / cache stay consistent (no Redis on free tier).
-    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --proxy-headers --forwarded-allow-ips=*
+    # --no-access-log keeps socket tokens (?token=...) out of Render's logs; the app logs requests itself.
+    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --proxy-headers --forwarded-allow-ips=* --no-access-log
     autoDeploy: true
     envVars:
       - key: ENV
@@ -56,6 +57,10 @@ services:
         sync: false
       - key: JWT_EXPIRES_MIN
         value: "1440"
+      # How the rate limiter finds the visitor's IP behind Render's proxy.
+      # Check https://<your-app>/admin/debug/ip while signed in as the coach and change if needed.
+      - key: CLIENT_IP_MODE
+        value: xff-last
       # ---- Android app, after building it with PWABuilder ----
       - key: ANDROID_PACKAGE
         sync: false

@@ -49,6 +49,12 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     MAX_UPLOAD_MB: int = 8
     RAZORPAY_WEBHOOK_SECRET: str = ""
+    # Which address the rate limiter treats as the visitor's IP:
+    #   xff-last  = last X-Forwarded-For entry (added by a proxy that appends)
+    #   xff-first = first X-Forwarded-For entry (proxy that overwrites the header)
+    #   direct    = the socket address uvicorn reports
+    # Check /admin/debug/ip in production and pick the mode that shows your real IP.
+    CLIENT_IP_MODE: str = "xff-last"
     # Android app (Trusted Web Activity) — from PWABuilder / Bubblewrap signing details
     ANDROID_PACKAGE: str = ""
     ANDROID_CERT_SHA256: str = ""

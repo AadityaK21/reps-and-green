@@ -17,6 +17,7 @@ from ..db import files as files_col
 from ..deps import get_current_user
 from ..integrations import storage
 from ..logging_conf import get_logger
+from ..ratelimit import check_rate
 from ..utils import oid
 
 log = get_logger("files")
@@ -30,6 +31,9 @@ SIGNATURES = {
     "video/mp4": [b"\x00\x00\x00\x18ftyp", b"\x00\x00\x00\x1cftyp", b"\x00\x00\x00\x20ftyp"],
     "video/quicktime": [b"\x00\x00\x00\x14ftyp", b"\x00\x00\x00\x20ftyp"],
 }
+UPLOADS_PER_HOUR = 20
+MAX_FILES_PER_USER = 300
+
 KIND_TYPES = {
     "progress": {"image/jpeg", "image/png", "image/webp"},
     "avatar": {"image/jpeg", "image/png", "image/webp"},
@@ -46,6 +50,10 @@ def _check_signature(content_type: str, head: bytes) -> bool:
 async def upload(file: UploadFile, kind: str = "progress", user=Depends(get_current_user)):
     if kind not in KIND_TYPES:
         raise HTTPException(400, f"kind must be one of {', '.join(KIND_TYPES)}")
+    is_staff = user.get("role") in ("coach", "admin")
+    await check_rate("upload", user["id"], 200 if is_staff else UPLOADS_PER_HOUR, 3600)
+    if not is_staff and await files_col.count_documents({"user_id": user["id"]}) >= MAX_FILES_PER_USER:
+        raise HTTPException(409, "You've reached the photo limit. Delete some old photos first.")
     # exercise/video are catalog assets — coach only
     if kind in ("exercise", "video") and user.get("role") not in ("coach", "admin"):
         raise HTTPException(403, "Only coaches can upload exercise media")

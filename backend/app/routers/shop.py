@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from ..cache import get as cache_get
 from ..cache import set as cache_set
 from ..config import settings
-from ..db import carts, orders, products, promos, transactions
+from ..db import carts, orders, products, promos, subscriptions, transactions
 from ..deps import get_current_user
 from ..domain.pricing import LineItem, Promo, price_cart
 from ..integrations.razorpay_client import create_order, verify_signature
@@ -23,6 +23,7 @@ from ..models import CheckoutIn, VerifyPaymentIn
 from ..services import gamify
 from ..utils import clamp_page, oid
 from .notifications import notify
+from .subscriptions import activate as activate_subscription
 
 log = get_logger("shop")
 router = APIRouter(prefix="/shop", tags=["shop"])
@@ -94,9 +95,15 @@ async def checkout(data: CheckoutIn, user=Depends(get_current_user)):
 
 
 async def _fulfil(order: dict, payment_id: str) -> None:
-    """Mark paid, write to the ledger, clear the cart, award achievements, notify."""
-    await orders.update_one({"_id": order["_id"]},
-                            {"$set": {"status": "paid", "payment_id": payment_id, "paid_at": time.time()}})
+    """Mark paid, write to the ledger, clear the cart, award achievements, notify.
+
+    The status flip is atomic, so if the client's verify call and Razorpay's webhook
+    arrive together the order is still fulfilled (and recorded) exactly once.
+    """
+    res = await orders.update_one({"_id": order["_id"], "status": {"$ne": "paid"}},
+                                  {"$set": {"status": "paid", "payment_id": payment_id, "paid_at": time.time()}})
+    if not res.modified_count:
+        return
     await transactions.insert_one({
         "user_id": order["user_id"], "kind": "order", "amount": order["total"],
         "currency": "INR", "status": "paid", "provider": "razorpay",
@@ -117,10 +124,17 @@ async def verify_payment(data: VerifyPaymentIn, user=Depends(get_current_user)):
         raise HTTPException(404, "Order not found")
     if o.get("status") == "paid":
         return {"ok": True, "status": "paid"}  # idempotent
-    if not verify_signature(data.razorpay_order_id, data.razorpay_payment_id, data.razorpay_signature):
-        await orders.update_one({"_id": o["_id"]}, {"$set": {"status": "failed"}})
+    # The signature only proves "payment P paid Razorpay order R". It must be checked
+    # against the Razorpay order WE created for this order; otherwise paying a cheap
+    # order could be used to mark an expensive one as paid.
+    if data.razorpay_order_id != o.get("razorpay_order_id"):
+        log.warning("payment for a different razorpay order order=%s user=%s", data.order_id, user["id"])
+        raise HTTPException(400, "This payment doesn't match your order")
+    if not verify_signature(o["razorpay_order_id"], data.razorpay_payment_id, data.razorpay_signature):
         log.warning("payment signature failed order=%s user=%s", data.order_id, user["id"])
         raise HTTPException(400, "Signature verification failed")
+    if await transactions.find_one({"provider_ref": data.razorpay_payment_id}):
+        raise HTTPException(409, "This payment has already been used")
     await _fulfil(o, data.razorpay_payment_id)
     return {"ok": True, "status": "paid"}
 
@@ -161,11 +175,18 @@ async def razorpay_webhook(request: Request):
     event = payload.get("event", "")
     entity = (payload.get("payload", {}).get("payment", {}) or {}).get("entity", {})
     rz_order = entity.get("order_id")
-    if event == "payment.captured" and rz_order:
+    if event in ("payment.captured", "order.paid") and rz_order:
         o = await orders.find_one({"razorpay_order_id": rz_order})
         if o and o.get("status") != "paid":
             await _fulfil(o, entity.get("id"))
             log.info("webhook marked order %s paid", o["_id"])
+        else:
+            # a premium plan paid but the app closed before it could confirm
+            sub = await subscriptions.find_one({"$or": [{"pending_order_id": rz_order},
+                                                        {"status": "pending", "razorpay_order_id": rz_order}]})
+            if sub:
+                await activate_subscription(sub, rz_order, entity.get("id"))
+                log.info("webhook activated subscription %s", sub["_id"])
     elif event == "payment.failed" and rz_order:
         await orders.update_one({"razorpay_order_id": rz_order, "status": "pending"},
                                 {"$set": {"status": "failed"}})

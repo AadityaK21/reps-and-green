@@ -32,5 +32,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD curl -fsS http://localhost:${PORT:-8000}/health || exit 1
 
 # Uses $PORT when the host sets one (Render does), else 8000. One worker keeps the
-# in-memory rate limiter and live chat consistent.
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --proxy-headers --forwarded-allow-ips=*
+# in-memory rate limiter and live chat consistent. --no-access-log: the app logs every
+# request itself WITHOUT query strings, so socket tokens (?token=...) never reach the logs.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --proxy-headers --forwarded-allow-ips=* --no-access-log
