@@ -99,10 +99,14 @@ async def test_subscription_payment_cannot_be_replayed_or_swapped(client, razorp
     assert r.status_code == 200
     assert r.json()["current_period_end"] == end_after_first
 
-    # start an annual checkout, then try to settle it with the old monthly payment
+    # start an annual checkout, then try to settle it with the old monthly payment:
+    # it's treated as the old payment again (no-op), never as paying for annual
     s2 = (await client.post("/subscriptions/subscribe", json={"plan_code": "premium_annual"}, headers=me)).json()
     r = await client.post("/subscriptions/verify-payment", json=pay, headers=me)
-    assert r.status_code == 400
+    assert r.status_code == 200
+    swapped = dict(pay, subscription_id=s2["subscription_id"], razorpay_order_id=s2["razorpay"]["order_id"])
+    r = await client.post("/subscriptions/verify-payment", json=swapped, headers=me)
+    assert r.status_code == 400  # monthly's signature doesn't fit the annual order
     st = (await client.get("/subscriptions/status", headers=me)).json()
     assert st["plan_code"] == "premium_monthly" and st["premium"] is True  # checkout didn't cost premium
     assert abs(st["current_period_end"] - end_after_first) < 1
@@ -116,6 +120,50 @@ async def test_subscription_payment_cannot_be_replayed_or_swapped(client, razorp
     st = (await client.get("/subscriptions/status", headers=me)).json()
     assert st["plan_code"] == "premium_annual"
     assert st["current_period_end"] > end_after_first + 360 * 86400
+
+
+async def test_slow_payment_for_an_older_checkout_still_counts(client, razorpay_live):
+    """Start monthly, then annual, then the monthly UPI payment completes: monthly activates."""
+    import app.db as db
+    await db.sub_plans.insert_many([
+        {"code": "premium_monthly", "name": "Premium Monthly", "price": 499, "interval": "monthly"},
+        {"code": "premium_annual", "name": "Premium Annual", "price": 4499, "interval": "annual"}])
+    me = _h(await _register(client, "slow@test.com"))
+    m = (await client.post("/subscriptions/subscribe", json={"plan_code": "premium_monthly"}, headers=me)).json()
+    await client.post("/subscriptions/subscribe", json={"plan_code": "premium_annual"}, headers=me)
+    rz = m["razorpay"]["order_id"]
+    r = await client.post("/subscriptions/verify-payment", headers=me, json={
+        "subscription_id": m["subscription_id"], "razorpay_order_id": rz,
+        "razorpay_payment_id": "pay_slow", "razorpay_signature": _sig(rz, "pay_slow")})
+    assert r.status_code == 200
+    st = (await client.get("/subscriptions/status", headers=me)).json()
+    assert st["plan_code"] == "premium_monthly" and st["premium"]
+    assert st["current_period_end"] < time.time() + 31 * 86400
+    tx = await db.transactions.find_one({"provider_ref": "pay_slow"})
+    assert tx["amount"] == 499
+
+
+async def test_checkout_started_before_upgrade_is_honoured(client, razorpay_live):
+    """Records from the old code (status pending + razorpay_order_id) still activate correctly."""
+    import app.db as db
+    await db.sub_plans.insert_many([
+        {"code": "premium_monthly", "name": "Premium Monthly", "price": 499, "interval": "monthly"},
+        {"code": "premium_annual", "name": "Premium Annual", "price": 4499, "interval": "annual"}])
+    reg = await _register(client, "legacy@test.com")
+    me = _h(reg)
+    await db.subscriptions.insert_one({"user_id": reg["user"]["id"], "plan_code": "premium_monthly",
+                                       "status": "pending", "razorpay_order_id": "order_legacy1",
+                                       "pending_price": 499, "trial_used": False})
+    # a new annual checkout in between must not change what the old order buys
+    await client.post("/subscriptions/subscribe", json={"plan_code": "premium_annual"}, headers=me)
+    sub = await db.subscriptions.find_one({"user_id": reg["user"]["id"]})
+    r = await client.post("/subscriptions/verify-payment", headers=me, json={
+        "subscription_id": str(sub["_id"]), "razorpay_order_id": "order_legacy1",
+        "razorpay_payment_id": "pay_old", "razorpay_signature": _sig("order_legacy1", "pay_old")})
+    assert r.status_code == 200
+    st = (await client.get("/subscriptions/status", headers=me)).json()
+    assert st["plan_code"] == "premium_monthly" and st["premium"]
+    assert (await db.transactions.find_one({"provider_ref": "pay_old"}))["amount"] == 499
 
 
 async def test_webhook_activates_subscription_once(client, razorpay_live, monkeypatch):
@@ -176,15 +224,80 @@ async def test_normal_signup_verification_keeps_password(client):
     assert r.status_code == 200
 
 
-async def test_password_guessing_is_limited_per_account_across_ips(client):
+async def test_password_guessing_is_limited_without_locking_out_the_owner(client, monkeypatch):
+    from app.routers import auth
+    monkeypatch.setattr(auth, "LOGIN_FAILS", {"pair": (5, 900), "email": (12, 3600)})
     await _register(client, "target@test.com")
-    for i in range(10):
-        r = await client.post("/auth/login", json={"email": "target@test.com", "password": "Wrong!1aa"},
-                              headers={"X-Forwarded-For": f"10.0.0.{i}"})
-        assert r.status_code == 401
-    r = await client.post("/auth/login", json={"email": "target@test.com", "password": STRONG},
-                          headers={"X-Forwarded-For": "10.0.1.1"})
+
+    async def login(pw, ip):
+        return (await client.post("/auth/login", json={"email": "target@test.com", "password": pw},
+                                  headers={"X-Forwarded-For": ip})).status_code
+
+    # one guesser gets blocked after 5 wrong passwords...
+    assert [await login("Wrong!1aa", "6.6.6.6") for _ in range(5)] == [401] * 5
+    assert await login("Wrong!1aa", "6.6.6.6") == 429
+    # ...but the real owner, elsewhere, still signs in, and successes don't count
+    assert await login(STRONG, "1.2.3.4") == 200
+    assert await login(STRONG, "1.2.3.4") == 200
+    # guessing spread over many addresses hits the per-account ceiling
+    for i in range(7):
+        assert await login("Wrong!1aa", f"10.0.0.{i}") == 401
+    assert await login("Wrong!1aa", "10.0.9.9") == 429
+
+
+async def test_otp_and_reset_limits_count_per_requester(client):
+    await _register(client, "codes@test.com")
+    for _ in range(5):
+        r = await client.post("/auth/otp/request", json={"email": "codes@test.com"},
+                              headers={"X-Forwarded-For": "6.6.6.6"})
+        assert r.status_code in (200, 429)  # per-IP limiter may also kick in
+    r = await client.post("/auth/otp/request", json={"email": "codes@test.com"},
+                          headers={"X-Forwarded-For": "6.6.6.6"})
     assert r.status_code == 429
+    # the owner on another network can still get a code
+    r = await client.post("/auth/otp/request", json={"email": "codes@test.com"},
+                          headers={"X-Forwarded-For": "1.2.3.4"})
+    assert r.status_code == 200
+
+
+async def test_expired_login_still_counts_as_account_holder(client, monkeypatch):
+    """Finishing verification with a lapsed login must not wipe your own password."""
+    from app.config import settings
+    me = await _register(client, "lapsed@test.com")
+    monkeypatch.setattr(settings, "JWT_EXPIRES_MIN", -1)
+    from app.security import make_access
+    expired = make_access(me["user"]["id"], "client")
+    monkeypatch.setattr(settings, "JWT_EXPIRES_MIN", 60)
+    code = (await client.post("/auth/otp/request", json={"email": "lapsed@test.com"})).json()["dev_code"]
+    r = await client.post("/auth/otp/verify", json={"email": "lapsed@test.com", "code": code},
+                          headers={"Authorization": f"Bearer {expired}"})
+    assert r.status_code == 200
+    r = await client.post("/auth/login", json={"email": "lapsed@test.com", "password": STRONG})
+    assert r.status_code == 200
+
+
+async def test_mock_payments_keep_working_in_development(client):
+    """Without Razorpay keys (dev), the app sends 'pay_mock' every time; that must not break."""
+    import app.db as db
+    me = _h(await _register(client, "mock@test.com"))
+    pid = (await db.products.insert_one({"name": "Band", "price": 100, "mrp": 100, "cat": "Gear"})).inserted_id
+    for _ in range(2):
+        co = (await client.post("/shop/checkout", json={"items": [{"product_id": str(pid), "qty": 1}]}, headers=me)).json()
+        r = await client.post("/shop/verify-payment", headers=me, json={
+            "order_id": co["order_id"], "razorpay_order_id": co["razorpay"]["order_id"],
+            "razorpay_payment_id": "pay_mock", "razorpay_signature": "mock"})
+        assert r.status_code == 200
+
+
+async def test_regular_class_goers_are_not_capped(client):
+    import app.db as db
+    reg = await _register(client, "regular@test.com")
+    # ten classes already attended in the past few weeks
+    await db.bookings.insert_many([{"user_id": reg["user"]["id"], "status": "confirmed", "slot": "x",
+                                    "kind": "intro_call", "starts_at": time.time() - (i + 1) * 86400,
+                                    "created_at": time.time() - (i + 2) * 86400} for i in range(10)])
+    r = await client.post("/bookings", json={"slot": "Tomorrow 6 PM"}, headers=_h(reg))
+    assert r.status_code == 200
 
 
 async def test_expired_reset_link_is_refused(client):

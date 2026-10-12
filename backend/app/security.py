@@ -71,6 +71,21 @@ def decode_token(token: str) -> dict:
     return jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
 
 
+def token_owner(token: str) -> str | None:
+    """User id from an access token WE signed, even if it has expired. None otherwise.
+
+    Used only to recognise "this is the account holder" (e.g. finishing email
+    verification on a device whose login has lapsed) — never to grant access.
+    """
+    if not token:
+        return None
+    try:
+        p = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"], options={"verify_exp": False})
+    except Exception:
+        return None
+    return str(p.get("sub")) if p.get("typ") == "access" else None
+
+
 def hash_token(token: str) -> str:
     """One-way hash for at-rest storage of refresh/reset tokens (never store raw)."""
     return hashlib.sha256(token.encode()).hexdigest()

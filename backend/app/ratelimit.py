@@ -60,6 +60,29 @@ async def check_rate(scope: str, key: str, times: int, seconds: int) -> None:
     check_rate_sync(scope, (key or "").lower(), times, seconds)
 
 
+def peek_rate(scope: str, key: str, times: int, seconds: int) -> int:
+    """Seconds to wait if `scope:key` is already at its limit, else 0. Records nothing."""
+    q = _hits.get(f"{scope}:{key}")
+    if not q:
+        return 0
+    now = time.monotonic()
+    while q and now - q[0] > seconds:
+        q.popleft()
+    return int(seconds - (now - q[0])) + 1 if len(q) >= times else 0
+
+
+def record_hit(scope: str, key: str) -> None:
+    """Count one event (e.g. a failed password) for `scope:key` without checking."""
+    q = _hits[f"{scope}:{key}"]
+    q.append(time.monotonic())
+    if len(q) > 500:  # longer than any window we check; keep memory bounded
+        q.popleft()
+
+
+def too_many(retry: int) -> HTTPException:
+    return _too_many(retry)
+
+
 class RateLimiter:
     """Dependency: `Depends(RateLimiter(times=5, seconds=60, scope="login"))`."""
 

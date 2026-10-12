@@ -35,6 +35,30 @@ def _when(slot: str) -> str:
     return dt.astimezone(IST).strftime("%a %d %b, %I:%M %p").replace(" 0", " ")
 
 
+_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+
+def _starts_at(slot: str) -> float:
+    """When the booking happens (epoch seconds), for both slot formats the app sends."""
+    try:
+        dt = datetime.fromisoformat(slot.replace("Z", "+00:00"))
+        return (dt if dt.tzinfo else dt.replace(tzinfo=IST)).timestamp()
+    except ValueError:
+        pass
+    day, clock = slot.split(" ", 1)  # validated: "Tomorrow 6 PM", "Sat 11:30 AM"
+    clock = clock.replace(" ", "").upper()
+    hh, mm = (clock[:-2].split(":") + ["0"])[:2]
+    hour = int(hh) % 12 + (12 if clock.endswith("PM") else 0)
+    now = datetime.now(IST)
+    if day == "Today":
+        date_ = now.date()
+    elif day == "Tomorrow":
+        date_ = (now + timedelta(days=1)).date()
+    else:
+        date_ = (now + timedelta(days=(_DAYS.index(day) - now.weekday()) % 7)).date()
+    return datetime(date_.year, date_.month, date_.day, hour, int(mm), tzinfo=IST).timestamp()
+
+
 def _what(kind: str) -> str:
     return "intro call" if kind == "intro_call" else kind.split(": ", 1)[-1] + " class"
 
@@ -42,12 +66,13 @@ def _what(kind: str) -> str:
 @router.post("")
 async def book(data: BookingIn, user=Depends(get_current_user)):
     await check_rate("booking", user["id"], BOOKINGS_PER_HOUR, 3600)
-    open_count = await bookings.count_documents({"user_id": user["id"], "status": "confirmed",
-                                                 "created_at": {"$gte": time.time() - 30 * 86400}})
-    if open_count >= MAX_OPEN_BOOKINGS:
-        raise HTTPException(429, "You have a lot of bookings already. Cancel one to book another.")
+    # only bookings still to come count, so regulars who attend every week never hit this
+    upcoming = await bookings.count_documents({"user_id": user["id"], "status": "confirmed",
+                                               "starts_at": {"$gt": time.time()}})
+    if upcoming >= MAX_OPEN_BOOKINGS:
+        raise HTTPException(429, "You have a lot of upcoming bookings. Cancel one to book another.")
     doc = {"user_id": user["id"], "user_name": user["name"], "slot": data.slot, "kind": data.kind,
-           "status": "confirmed", "created_at": time.time()}
+           "starts_at": _starts_at(data.slot), "status": "confirmed", "created_at": time.time()}
     res = await bookings.insert_one(doc)
     when, what = _when(data.slot), _what(data.kind)
     p = await prefs.find_one({"user_id": user["id"]}) or {}

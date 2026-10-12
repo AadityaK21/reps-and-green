@@ -24,6 +24,7 @@ from ..services import gamify
 from ..utils import clamp_page, oid
 from .notifications import notify
 from .subscriptions import activate as activate_subscription
+from .subscriptions import order_query as subscription_order_query
 
 log = get_logger("shop")
 router = APIRouter(prefix="/shop", tags=["shop"])
@@ -133,8 +134,8 @@ async def verify_payment(data: VerifyPaymentIn, user=Depends(get_current_user)):
     if not verify_signature(o["razorpay_order_id"], data.razorpay_payment_id, data.razorpay_signature):
         log.warning("payment signature failed order=%s user=%s", data.order_id, user["id"])
         raise HTTPException(400, "Signature verification failed")
-    if await transactions.find_one({"provider_ref": data.razorpay_payment_id}):
-        raise HTTPException(409, "This payment has already been used")
+    # (no separate "payment already used" check: the signature is bound to this order's
+    # own Razorpay order id, and _fulfil only ever flips an order to paid once)
     await _fulfil(o, data.razorpay_payment_id)
     return {"ok": True, "status": "paid"}
 
@@ -182,8 +183,8 @@ async def razorpay_webhook(request: Request):
             log.info("webhook marked order %s paid", o["_id"])
         else:
             # a premium plan paid but the app closed before it could confirm
-            sub = await subscriptions.find_one({"$or": [{"pending_order_id": rz_order},
-                                                        {"status": "pending", "razorpay_order_id": rz_order}]})
+            q = subscription_order_query(rz_order)
+            sub = await subscriptions.find_one(q) if q else None
             if sub:
                 await activate_subscription(sub, rz_order, entity.get("id"))
                 log.info("webhook activated subscription %s", sub["_id"])

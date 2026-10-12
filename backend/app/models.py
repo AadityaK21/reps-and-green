@@ -13,7 +13,7 @@ def clean_phone(v):
     """Accept +91 98765 43210 style input; store digits (and a leading +) only."""
     if v in (None, ""):
         return None
-    digits = re.sub(r"[\s-]", "", v)
+    digits = re.sub(r"[\s().-]", "", v)
     if not re.fullmatch(r"\+?\d{10,14}", digits):
         raise ValueError("Enter a valid mobile number (10-14 digits)")
     return digits
@@ -215,7 +215,7 @@ class PreferencesIn(BaseModel):
 
 
 class DeleteAccountIn(BaseModel):
-    password: Optional[str] = Password  # required for password accounts
+    password: Optional[str] = Field(default=None, max_length=128)  # required for password accounts
     confirm: str = Field(max_length=16)  # must equal "DELETE"
 
 

@@ -5,7 +5,8 @@ What protects the app, and the few settings that keep it that way.
 ## Payments (Razorpay)
 
 - A payment only counts for the exact Razorpay order the server created for that order or plan. A signature from a different (cheaper) order is refused.
-- Each payment ID can be used once. Verify and webhook can race; the order or plan is still fulfilled exactly once.
+- Each paid order is used once. Verify and webhook can race; the order or plan is still fulfilled exactly once.
+- Every plan checkout is remembered with its own plan and price, so a slow UPI payment for an older checkout activates what was actually paid for.
 - Starting a plan checkout never removes Premium someone already has. A free trial can't replace a paid plan.
 - The webhook (`/shop/webhook`) confirms shop orders **and** plans, so a payment still lands if the app closes mid-checkout. Set `RAZORPAY_WEBHOOK_SECRET` and add the webhook in the Razorpay dashboard for `payment.captured` and `order.paid`.
 - The Razorpay **key secret** lives only in Render's environment. The key ID in the app is public by design.
@@ -13,8 +14,9 @@ What protects the app, and the few settings that keep it that way.
 ## Accounts
 
 - Passwords are bcrypt-hashed. Sign-in codes are 6 digits, valid 10 minutes, 5 tries each.
-- Rate limits apply per IP **and** per email: 10 password tries per 15 minutes, 5 codes per hour, 3 reset emails per hour.
-- If someone registers an email they don't own, the real owner takes it back by signing in with an emailed code or Google: the earlier password and sessions stop working.
+- Wrong passwords and codes are limited per email-and-IP (10 per 15 minutes) and per email (50 per hour). Only failures count, so knowing someone's email isn't enough to lock them out.
+- Codes and reset emails are limited per email-and-IP and per email, so nobody can flood an inbox.
+- If someone registers an email they don't own, the real owner takes it back by signing in with an emailed code or Google: the earlier password and sessions stop working, and the owner gets an email saying so.
 - Reset links expire after 30 minutes and are single-use; using one signs out every device.
 - Logging out (or "sign out other devices") ends access immediately, including the live-update socket.
 - A refresh token used twice means it was copied, so the whole login is ended.
@@ -22,7 +24,7 @@ What protects the app, and the few settings that keep it that way.
 
 ## Abuse limits
 
-- Bookings: 6 per hour, 10 open at most. WhatsApp texts are built only from fixed wording plus a validated time, so nobody can send their own words from the business number.
+- Bookings: 6 per hour, 10 upcoming at most (past classes don't count). WhatsApp texts are built only from fixed wording plus a validated time, so nobody can send their own words from the business number.
 - Phone numbers must look like real numbers (10–14 digits).
 - Chat: 20 messages a minute for clients. Uploads: 20 an hour, 300 files per person.
 - Every input has length and range limits (names, meals, weights, dates, passwords).
