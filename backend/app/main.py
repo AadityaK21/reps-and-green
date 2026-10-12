@@ -1,4 +1,4 @@
-"""Merova Fit API — application entrypoint.
+"""Merova Fit API - application entrypoint.
 
 Wires routers, middleware (request IDs, timing, security headers, CORS, gzip),
 global error handling, and serves the single-file app at the root URL.
@@ -77,7 +77,7 @@ async def validation_handler(request: Request, exc: RequestValidationError):
 @app.exception_handler(Exception)
 async def unhandled_handler(request: Request, exc: Exception):
     log.exception("unhandled error on %s %s", request.method, request.url.path)
-    return JSONResponse(status_code=500, content={"detail": "Something went wrong on our side — please retry"})
+    return JSONResponse(status_code=500, content={"detail": "Something went wrong on our side. Please try again."})
 
 
 # --- routers ---

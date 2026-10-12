@@ -1,8 +1,8 @@
 """Tiny async cache abstraction.
 
 Uses Redis when REDIS_URL is set (shared across processes/instances), otherwise a
-process-local dict with TTLs. The interface is deliberately small — get/set/delete
-of JSON-serialisable values — so call sites don't care which backend is active.
+process-local dict with TTLs. The interface is deliberately small - get/set/delete
+of JSON-serialisable values - so call sites don't care which backend is active.
 """
 from __future__ import annotations
 
@@ -30,8 +30,8 @@ async def _client():
             _redis = aioredis.from_url(settings.REDIS_URL, encode_responses=True)
             await _redis.ping()
             log.info("cache: redis connected")
-        except Exception as e:  # fall back gracefully — never take the app down for cache
-            log.warning("cache: redis unavailable (%s) — using in-memory", e)
+        except Exception as e:  # fall back gracefully - never take the app down for cache
+            log.warning("cache: redis unavailable (%s) - using in-memory", e)
             _redis = None
     return _redis
 

@@ -49,7 +49,7 @@ async def ensure_indexes():
     await notifications.create_index([("user_id", 1), ("ts", -1)])
     await notifications.create_index([("user_id", 1), ("read", 1)])
     await files.create_index([("user_id", 1), ("ts", -1)])
-    # OTPs self-expire at their deadline — no cron needed
+    # OTPs self-expire at their deadline - no cron needed
     await otps.create_index("expires_at", expireAfterSeconds=0)
 
     # --- v2 indexes ---
@@ -79,7 +79,7 @@ async def ensure_indexes():
     await device_tokens.create_index([("user_id", 1)])
     # measurements
     await measurements.create_index([("user_id", 1), ("date", -1)])
-    # searchable catalog — text index across name/tags/muscle
+    # searchable catalog - text index across name/tags/muscle
     await catalog.create_index([("name", "text"), ("tags", "text"), ("muscle", "text")])
     await catalog.create_index([("kind", 1)])
     # preferences: one per user

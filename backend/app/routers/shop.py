@@ -113,7 +113,7 @@ async def _fulfil(order: dict, payment_id: str) -> None:
     await carts.update_one({"user_id": order["user_id"]}, {"$set": {"items": [], "promo_code": None}})
     result = await gamify.award(order["user_id"], "order_paid")  # no XP rule -> just badge check
     names = ", ".join(i["name"] for i in order.get("items", [])[:3])
-    await notify(order["user_id"], "order", "Order confirmed", f"{names} — your order is on the way.")
+    await notify(order["user_id"], "order", "Order confirmed", f"{names}: your order is on the way.")
     for b in result.get("new_badges", []):
         await notify(order["user_id"], "achievement", f"Badge unlocked: {b['name']}", b["desc"])
 
@@ -163,7 +163,7 @@ async def my_transactions(limit: int = 50, skip: int = 0, user=Depends(get_curre
 
 @router.post("/webhook")
 async def razorpay_webhook(request: Request):
-    """Razorpay server-to-server webhook — the authoritative payment confirmation."""
+    """Razorpay server-to-server webhook - the authoritative payment confirmation."""
     if not settings.RAZORPAY_WEBHOOK_SECRET:
         raise HTTPException(503, "Webhook not configured")
     body = await request.body()

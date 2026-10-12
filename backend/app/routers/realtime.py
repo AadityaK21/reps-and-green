@@ -1,7 +1,7 @@
 """Real-time events WebSocket.
 
 Clients connect to `/ws/events?token=<access_jwt>` and receive live pushes for
-notifications, cart sync, and goal/workout updates — the same events other routers
+notifications, cart sync, and goal/workout updates - the same events other routers
 emit via `hub.publish(user_id, ...)`. A single connection multiplexes every event
 type; the client switches on `event["type"]`.
 """

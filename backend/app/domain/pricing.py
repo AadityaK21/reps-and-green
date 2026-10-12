@@ -1,4 +1,4 @@
-"""Cart & checkout pricing — the single source of truth for money math.
+"""Cart & checkout pricing - the single source of truth for money math.
 
 All amounts are integer INR rupees (no floats for currency). A cart is priced in
 one pass so the server, the checkout sheet, and the payment gateway always agree

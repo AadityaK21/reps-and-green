@@ -1,4 +1,4 @@
-"""Central logging configuration — structured, consistent, and quiet in the right places."""
+"""Central logging configuration - structured, consistent, and quiet in the right places."""
 import logging
 import sys
 

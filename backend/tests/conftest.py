@@ -1,7 +1,7 @@
 """Test fixtures.
 
 API tests run against an in-memory Mongo (mongomock-motor) so no database server
-is required — collection handles in `app.db` are rebound to the mock *before* any
+is required - collection handles in `app.db` are rebound to the mock *before* any
 router imports them, and index creation is stubbed (the mock doesn't implement
 text/TTL indexes). Pure-logic tests (pricing, xp) need none of this.
 """

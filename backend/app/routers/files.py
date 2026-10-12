@@ -2,7 +2,7 @@
 
 Validation (size + magic-byte signature) happens here; the actual bytes go through
 the pluggable storage adapter (`local` | `s3` | `cloudinary`), so switching to the
-cloud is an env change with no API change. Progress photos are private — served
+cloud is an env change with no API change. Progress photos are private - served
 only to their owner or a coach.
 """
 import time
@@ -54,7 +54,7 @@ async def upload(file: UploadFile, kind: str = "progress", user=Depends(get_curr
     await check_rate("upload", user["id"], 200 if is_staff else UPLOADS_PER_HOUR, 3600)
     if not is_staff and await files_col.count_documents({"user_id": user["id"]}) >= MAX_FILES_PER_USER:
         raise HTTPException(409, "You've reached the photo limit. Delete some old photos first.")
-    # exercise/video are catalog assets — coach only
+    # exercise/video are catalog assets - coach only
     if kind in ("exercise", "video") and user.get("role") not in ("coach", "admin"):
         raise HTTPException(403, "Only coaches can upload exercise media")
     if file.content_type not in KIND_TYPES[kind]:
@@ -85,7 +85,7 @@ async def serve(file_id: str, user=Depends(get_current_user)):
     doc = await files_col.find_one({"_id": oid(file_id, "file id")})
     if not doc:
         raise HTTPException(404, "File not found")
-    # owner or coach only — progress photos are private
+    # owner or coach only - progress photos are private
     if doc["user_id"] != user["id"] and user.get("role") not in ("coach", "admin"):
         raise HTTPException(403, "Not allowed")
     if doc.get("public_url"):

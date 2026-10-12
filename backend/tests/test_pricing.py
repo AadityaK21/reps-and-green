@@ -1,4 +1,4 @@
-"""Pricing engine unit tests — pure logic, no DB or network."""
+"""Pricing engine unit tests - pure logic, no DB or network."""
 from app.domain.pricing import LineItem, Promo, price_cart, promo_discount_for
 
 

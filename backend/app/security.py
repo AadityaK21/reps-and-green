@@ -2,7 +2,7 @@
 
 Access tokens are short-ish and carry identity (`sub`, `role`) plus a unique
 `jti` and `typ=access`. Refresh tokens are JWTs (`typ=refresh`) whose `jti` is
-stored server-side (hashed) so they can be revoked — that's what powers logout
+stored server-side (hashed) so they can be revoked - that's what powers logout
 and session management. `make_token` is kept as an alias so existing callers keep
 working unchanged.
 """
@@ -75,7 +75,7 @@ def token_owner(token: str) -> str | None:
     """User id from an access token WE signed, even if it has expired. None otherwise.
 
     Used only to recognise "this is the account holder" (e.g. finishing email
-    verification on a device whose login has lapsed) — never to grant access.
+    verification on a device whose login has lapsed) - never to grant access.
     """
     if not token:
         return None

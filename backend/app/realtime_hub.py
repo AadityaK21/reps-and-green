@@ -1,12 +1,12 @@
 """Real-time event hub.
 
 A per-user fan-out registry for WebSocket connections. Any part of the app can
-call `hub.publish(user_id, event)` to push to every device that user has open —
+call `hub.publish(user_id, event)` to push to every device that user has open -
 this is what drives live notifications, goal-progress, and cart sync across a
 user's phone + web at once.
 
 This implementation is in-process (fine for a single instance / dev). To scale
-horizontally, back `publish` with Redis pub/sub — the `hub` API stays identical.
+horizontally, back `publish` with Redis pub/sub - the `hub` API stays identical.
 """
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""XP / level / badge engine unit tests — pure logic."""
+"""XP / level / badge engine unit tests - pure logic."""
 from app.domain.xp import (BADGES, XP_RULES, level_for_xp, level_progress, unlocked_badges)
 
 

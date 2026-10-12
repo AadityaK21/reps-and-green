@@ -1,7 +1,7 @@
 """Lightweight in-memory sliding-window rate limiter.
 
 Suitable for a single-process deployment; swap the store for Redis when scaling
-horizontally — the interface stays the same.
+horizontally - the interface stays the same.
 
 Two ways to use it:
   * `Depends(RateLimiter(times=5, seconds=60, scope="login"))` limits per client IP.
@@ -36,7 +36,7 @@ _client_ip = client_ip  # backward-compatible name
 def _too_many(retry: int) -> HTTPException:
     return HTTPException(
         429,
-        detail=f"Too many requests — try again in {retry}s",
+        detail=f"Too many requests. Try again in {retry}s.",
         headers={"Retry-After": str(retry)},
     )
 

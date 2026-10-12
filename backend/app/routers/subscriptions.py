@@ -202,7 +202,7 @@ async def verify_sub_payment(data: VerifySubPaymentIn, user=Depends(get_current_
 
 @router.post("/cancel")
 async def cancel(user=Depends(get_current_user)):
-    """Cancel at period end — premium stays until the paid period runs out."""
+    """Cancel at period end - premium stays until the paid period runs out."""
     sub = await subscriptions.find_one({"user_id": user["id"]})
     if not sub or sub.get("status") not in ("active", "trialing"):
         raise HTTPException(400, "No active subscription to cancel")

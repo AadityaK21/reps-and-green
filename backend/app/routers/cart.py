@@ -36,7 +36,7 @@ async def _quote(cart: dict) -> dict:
     for it in cart.get("items", []):
         p = await products.find_one({"_id": oid(it["product_id"], "product id")})
         if not p:
-            changed = True  # product vanished — drop it silently
+            changed = True  # product vanished - drop it silently
             continue
         line_items.append(LineItem(product_id=it["product_id"], name=p["name"],
                                    price=p["price"], qty=it["qty"]))
@@ -124,7 +124,7 @@ async def apply_promo(data: PromoIn, user=Depends(get_current_user)):
     await carts.update_one({"user_id": user["id"]}, {"$set": {"promo_code": data.code.upper()}}, upsert=True)
     quote = await _respond(user["id"])
     if quote["promo_discount"] == 0:
-        # code exists but didn't apply (e.g. min subtotal not met) — surface why
+        # code exists but didn't apply (e.g. min subtotal not met) - surface why
         raise HTTPException(400, quote["notes"][0] if quote["notes"] else "Promo could not be applied")
     return quote
 

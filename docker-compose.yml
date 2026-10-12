@@ -1,4 +1,4 @@
-# Reps & Greens — full local/production stack.
+# Reps & Greens - full local/production stack.
 #   docker compose up --build          # start api + mongo + redis
 #   docker compose run --rm api python seed.py   # seed data once mongo is up
 #
@@ -32,7 +32,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # not published to the host by default — only the api talks to it
+    # not published to the host by default - only the api talks to it
 
   redis:
     image: redis:7-alpine

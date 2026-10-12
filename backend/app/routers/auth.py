@@ -190,7 +190,7 @@ async def otp_verify(data: OTPVerifyIn, request: Request, authorization: str = H
         raise HTTPException(401, "Invalid or expired code")
     if rec.get("attempts", 0) >= 5:
         await otps.delete_one({"email": email})
-        raise HTTPException(429, "Too many attempts — request a new code")
+        raise HTTPException(429, "Too many attempts. Request a new code.")
     if not hmac.compare_digest(str(rec["code"]), str(data.code)):
         _count("otp-fail", email, ip)
         await otps.update_one({"email": email}, {"$inc": {"attempts": 1}})
@@ -282,7 +282,7 @@ async def change_password(data: ChangePasswordIn, user=Depends(get_current_user)
     await users.update_one({"_id": oid(user["id"], "user id")},
                            {"$set": {"pw": hash_pw(data.new_password)}})
     await sessions.revoke_all(user["id"])
-    return {"ok": True, "message": "Password changed — please sign in again."}
+    return {"ok": True, "message": "Password changed. Please sign in again."}
 
 
 # ---- social sign-in ----

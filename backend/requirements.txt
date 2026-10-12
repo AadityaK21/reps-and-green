@@ -1,4 +1,4 @@
-# ==== Reps & Greens backend — core runtime ====
+# ==== Reps & Greens backend - core runtime ====
 fastapi==0.118.0
 uvicorn[standard]==0.37.0
 motor==3.7.1                 # async MongoDB driver
@@ -13,7 +13,7 @@ httpx==0.28.1
 segno==1.6.6                 # QR code on the website (pure Python)
 python-multipart==0.0.20     # multipart/form-data (file uploads)
 
-# ==== Optional — enabled by the matching env var, safe to omit in dev ====
+# ==== Optional - enabled by the matching env var, safe to omit in dev ====
 redis==5.2.1                 # caching + horizontal-scale real-time (set REDIS_URL)
 boto3==1.35.90              ; python_version >= "3.8"   # S3 storage (STORAGE_BACKEND=s3)
 cloudinary==1.41.0          # Cloudinary storage (STORAGE_BACKEND=cloudinary)

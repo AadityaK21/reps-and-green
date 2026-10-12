@@ -27,7 +27,7 @@ export default function Profile() {
       <h2 className="seglabel">Progress</h2>
       <div className="card p-4">
         <div className="flex items-center justify-between">
-          <p className="font-num text-xl font-bold">{weights.data?.at(-1)?.weight_kg ?? '—'} kg</p>
+          <p className="font-num text-xl font-bold">{weights.data?.at(-1)?.weight_kg ?? '-'} kg</p>
           <button onClick={logWeight} className="rounded-xl bg-ink px-3 py-2 text-xs font-bold text-canvas">Log weight</button>
         </div>
         <p className="mt-1 text-xs text-inksoft">{weights.data?.length || 0} entries</p>
