@@ -1,4 +1,4 @@
-"""Merova Fit API — application entrypoint.
+"""Merova Fit API - application entrypoint.
 
 Wires routers, middleware (request IDs, timing, security headers, CORS, gzip),
 global error handling, and serves the single-file app at the root URL.
@@ -26,8 +26,11 @@ log = get_logger("app")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if settings.ENV == "production" and settings.JWT_SECRET == "dev-secret-change-me":
-        raise RuntimeError("Refusing to start in production with the default JWT_SECRET — set it in .env")
+    if settings.ENV == "production" and (settings.JWT_SECRET == "dev-secret-change-me"
+                                         or len(settings.JWT_SECRET) < 32):
+        raise RuntimeError("Refusing to start in production without a strong JWT_SECRET (32+ characters)")
+    if settings.ENV == "production" and settings.RAZORPAY_KEY_SECRET and not settings.RAZORPAY_WEBHOOK_SECRET:
+        log.warning("RAZORPAY_WEBHOOK_SECRET is not set: payments made while the app is closed won't be confirmed")
     await ensure_indexes()
     log.info("startup env=%s db=%s razorpay=%s twilio=%s resend=%s",
              settings.ENV, settings.DB_NAME,
@@ -74,7 +77,7 @@ async def validation_handler(request: Request, exc: RequestValidationError):
 @app.exception_handler(Exception)
 async def unhandled_handler(request: Request, exc: Exception):
     log.exception("unhandled error on %s %s", request.method, request.url.path)
-    return JSONResponse(status_code=500, content={"detail": "Something went wrong on our side — please retry"})
+    return JSONResponse(status_code=500, content={"detail": "Something went wrong on our side. Please try again."})
 
 
 # --- routers ---
@@ -106,20 +109,8 @@ async def public_config():
 
 @app.get("/health")
 async def health():
-    db_ok = await ping()
-    return {
-        "ok": db_ok,
-        "db": db_ok,
-        "razorpay": bool(settings.RAZORPAY_KEY_ID),
-        "twilio": bool(settings.TWILIO_ACCOUNT_SID),
-        "resend": bool(settings.RESEND_API_KEY),
-        "fcm": bool(settings.FCM_SERVER_KEY),
-        "redis": bool(settings.REDIS_URL),
-        "storage": settings.STORAGE_BACKEND,
-        "ws_connections": realtime.hub.connection_count(),
-        "env": settings.ENV,
-        "version": app.version,
-    }
+    """Public liveness check (Render pings this). Details live at /admin/health."""
+    return {"ok": await ping()}
 
 
 # icons, manifest and other static assets

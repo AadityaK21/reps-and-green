@@ -1882,7 +1882,7 @@ body,button,input,textarea,select{font-family:'Inter',-apple-system,BlinkMacSyst
 </div>
 
 <script>
-const CONFIG={API_URL:localStorage.getItem('rng_api')||(location.protocol.startsWith('http')?location.origin:'http://localhost:8000'),RAZORPAY_KEY_ID:'rzp_test_T6a0XcwkJAboGh'};
+const CONFIG={API_URL:(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)&&localStorage.getItem('rng_api'))||(location.protocol.startsWith('http')?location.origin:'http://localhost:8000'),RAZORPAY_KEY_ID:'rzp_test_T6a0XcwkJAboGh'};
 /* ===== API LAYER (FastAPI + MongoDB backend) ===== */
 let LIVE=false; // becomes true when backend /health responds
 const tokenGet=()=>localStorage.getItem('rng_token')||'';

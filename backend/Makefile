@@ -1,4 +1,4 @@
-# Reps & Greens backend — common tasks
+# Reps & Greens backend - common tasks
 .PHONY: install dev seed test lint docker up down
 
 install:        ## install runtime + dev deps

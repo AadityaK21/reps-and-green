@@ -129,7 +129,7 @@ async def stats(user=Depends(get_current_user)):
     def active(ds: str) -> bool:
         return ex_by_day.get(ds, 0) > 0 or kcal_by_day.get(ds, 0) > 0 or water_by_day.get(ds, 0) > 0
 
-    # current streak — counts back from today (today itself may still be in progress)
+    # current streak - counts back from today (today itself may still be in progress)
     streak, cursor = 0, today
     if not active(cursor.isoformat()):
         cursor -= timedelta(days=1)  # grace: streak survives until today is over

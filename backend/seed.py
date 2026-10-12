@@ -1,7 +1,7 @@
 """Seed baseline data: coach account, shop products, subscription plans, promo
 codes, and the searchable exercise/workout/meal catalog.
 
-Idempotent — safe to run repeatedly (only inserts what's missing). Run:
+Idempotent - safe to run repeatedly (only inserts what's missing). Run:
     python seed.py
 """
 import asyncio

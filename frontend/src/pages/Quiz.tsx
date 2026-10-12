@@ -22,7 +22,7 @@ export default function Quiz() {
     if (i < Q.length - 1) { setI(i + 1); return }
     try {
       const r = await api.post<any>('/me/quiz', next)
-      showToast(`Plan ready — ${r.daily_kcal} kcal/day`)
+      showToast(`Plan ready: ${r.daily_kcal} kcal/day`)
       nav('/')
     } catch (e: any) { showToast(e.message) }
   }

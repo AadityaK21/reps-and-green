@@ -1,4 +1,4 @@
-"""XP, levels, and badge rules — the gamification core.
+"""XP, levels, and badge rules - the gamification core.
 
 Deterministic and DB-free: given a user's raw activity counters, compute their
 XP, level, next-level progress, and which badges are unlocked. The achievement

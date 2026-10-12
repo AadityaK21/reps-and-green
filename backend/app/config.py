@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     MEMBER_DISCOUNT_PCT: float = 0.15     # loyalty discount applied to every cart
     TAX_PCT: float = 0.0                  # e.g. 0.18 for 18% GST; 0 disables tax
 
-    # caching / real-time (optional — falls back to in-process when unset)
+    # caching / real-time (optional - falls back to in-process when unset)
     REDIS_URL: str = ""
 
     # push notifications (Firebase Cloud Messaging HTTP v1 or legacy server key)
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # Apple Sign-In
     APPLE_CLIENT_ID: str = ""             # your app's services/bundle id (aud)
 
-    # cloud storage — STORAGE_BACKEND = local | s3 | cloudinary
+    # cloud storage - STORAGE_BACKEND = local | s3 | cloudinary
     STORAGE_BACKEND: str = "local"
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
@@ -49,7 +49,13 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     MAX_UPLOAD_MB: int = 8
     RAZORPAY_WEBHOOK_SECRET: str = ""
-    # Android app (Trusted Web Activity) — from PWABuilder / Bubblewrap signing details
+    # Which address the rate limiter treats as the visitor's IP:
+    #   xff-last  = last X-Forwarded-For entry (added by a proxy that appends)
+    #   xff-first = first X-Forwarded-For entry (proxy that overwrites the header)
+    #   direct    = the socket address uvicorn reports
+    # Check /admin/debug/ip in production and pick the mode that shows your real IP.
+    CLIENT_IP_MODE: str = "xff-last"
+    # Android app (Trusted Web Activity) - from PWABuilder / Bubblewrap signing details
     ANDROID_PACKAGE: str = ""
     ANDROID_CERT_SHA256: str = ""
 

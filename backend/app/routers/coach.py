@@ -1,7 +1,8 @@
 import time
 from fastapi import APIRouter, Depends
-from bson import ObjectId
+from fastapi import HTTPException
 from ..deps import require_coach
+from ..utils import oid
 from ..db import users, orders, workouts, meals, broadcasts, weight_logs, prefs
 from ..models import AssignPlanIn, BroadcastIn
 from ..integrations.twilio_wa import send_whatsapp
@@ -21,12 +22,15 @@ async def clients(coach=Depends(require_coach)):
 
 @router.post("/assign-plan")
 async def assign_plan(data: AssignPlanIn, coach=Depends(require_coach)):
+    client_oid = oid(data.client_id, "client id")
+    if not await users.find_one({"_id": client_oid, "role": "client"}, {"_id": 1}):
+        raise HTTPException(404, "Client not found")
     await workouts.insert_one({"client_id": data.client_id, "title": data.workout_title,
                                "exercises": data.exercises, "created_at": time.time()})
     if data.meals:  # calories-only updates keep the client's current meals
         await meals.insert_one({"client_id": data.client_id, "daily_kcal": data.daily_kcal,
                                 "meals": data.meals, "created_at": time.time()})
-    await users.update_one({"_id": ObjectId(data.client_id)}, {"$set": {"daily_kcal": data.daily_kcal}})
+    await users.update_one({"_id": client_oid}, {"$set": {"daily_kcal": data.daily_kcal}})
     await notify(data.client_id, "system", "New plan assigned", f"{data.workout_title} · {data.daily_kcal} kcal/day")
     return {"ok": True}
 

@@ -47,14 +47,26 @@ async def test_refresh_rotation_and_logout(client):
     r = await client.post("/auth/refresh", json={"refresh_token": reg["refresh_token"]})
     assert r.status_code == 200
     new = r.json()
-    # old refresh token is now revoked (rotation)
-    r = await client.post("/auth/refresh", json={"refresh_token": reg["refresh_token"]})
-    assert r.status_code == 401
     # logout revokes the new one
     r = await client.post("/auth/logout", json={"refresh_token": new["refresh_token"]},
                           headers={"Authorization": f"Bearer {new['token']}"})
     assert r.status_code == 200
     r = await client.post("/auth/refresh", json={"refresh_token": new["refresh_token"]})
+    assert r.status_code == 401
+
+
+async def test_replayed_refresh_token_ends_the_whole_login(client):
+    """A refresh token used twice means it was copied: both copies must stop working."""
+    reg = await _register(client, "replay@test.com")
+    r = await client.post("/auth/refresh", json={"refresh_token": reg["refresh_token"]})
+    assert r.status_code == 200
+    new = r.json()
+    r = await client.post("/auth/refresh", json={"refresh_token": reg["refresh_token"]})
+    assert r.status_code == 401
+    # the newer token from the same login is now dead too
+    r = await client.post("/auth/refresh", json={"refresh_token": new["refresh_token"]})
+    assert r.status_code == 401
+    r = await client.get("/me", headers={"Authorization": f"Bearer {new['token']}"})
     assert r.status_code == 401
 
 
@@ -113,7 +125,7 @@ async def test_achievements_state_default(client):
 async def test_health(client):
     r = await client.get("/health")
     assert r.status_code == 200
-    assert "version" in r.json()
+    assert r.json() == {"ok": True}  # no config details on the public endpoint
 
 
 async def test_revoked_session_kills_access_token(client):

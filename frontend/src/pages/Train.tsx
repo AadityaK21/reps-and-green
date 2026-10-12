@@ -17,7 +17,7 @@ export default function Train() {
       qc.invalidateQueries({ queryKey: ['exlog', today()] })
       const willDone = !doneSet.has(ex)
       const totalDone = doneSet.size + (willDone ? 1 : -1)
-      if (willDone && totalDone === (plan.data?.exercises?.length || 5)) showToast('Workout complete — great work!')
+      if (willDone && totalDone === (plan.data?.exercises?.length || 5)) showToast('Workout complete. Great work!')
     },
   })
 

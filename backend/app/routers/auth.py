@@ -23,18 +23,39 @@ from ..models import (
     AppleIn, ChangePasswordIn, ForgotPasswordIn, GoogleIn, LoginIn, OTPRequestIn,
     OTPVerifyIn, RefreshIn, RegisterIn, ResetPasswordIn,
 )
-from ..ratelimit import RateLimiter
-from ..security import hash_pw, hash_token, random_token, verify_pw
+from ..ratelimit import RateLimiter, client_ip, peek_rate, record_hit, too_many
+from ..security import hash_pw, hash_token, random_token, token_owner, verify_pw
 from ..services import sessions
 from ..utils import oid
 
 log = get_logger("auth")
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# per-IP limits (first line of defence) ...
 login_limit = RateLimiter(times=10, seconds=60, scope="login")
 register_limit = RateLimiter(times=5, seconds=60, scope="register")
 otp_limit = RateLimiter(times=3, seconds=60, scope="otp")
+otp_verify_limit = RateLimiter(times=10, seconds=60, scope="otp-verify")
 reset_limit = RateLimiter(times=4, seconds=300, scope="reset")
+social_limit = RateLimiter(times=20, seconds=60, scope="social")
+# ... plus per-account limits. Wrong guesses are counted per (email, IP), with a looser
+# ceiling per email for guessing spread over many IPs. Only FAILED attempts count, so
+# knowing someone's email isn't enough to lock them out of their own account.
+LOGIN_FAILS = {"pair": (10, 15 * 60), "email": (50, 60 * 60)}
+OTP_FAILS = {"pair": (15, 60 * 60), "email": (60, 60 * 60)}
+OTP_SENDS = {"pair": (5, 60 * 60), "email": (20, 60 * 60)}     # stops inbox flooding
+RESET_SENDS = {"pair": (3, 60 * 60), "email": (10, 60 * 60)}
+
+
+def _limited(scope: str, email: str, ip: str, rule: dict) -> int:
+    """Wait time (s) if this email+IP or this email has hit its limit, else 0."""
+    return (peek_rate(scope, f"{email}|{ip}", *rule["pair"])
+            or peek_rate(scope, email, *rule["email"]))
+
+
+def _count(scope: str, email: str, ip: str) -> None:
+    record_hit(scope, f"{email}|{ip}")
+    record_hit(scope, email)
 
 DEFAULTS = {"role": "client", "quiz": None, "daily_kcal": 1500, "phone": "", "dob": "",
             "gender": "", "height_cm": None, "streak": 0, "verified": False, "banned": False}
@@ -49,9 +70,7 @@ def public_user(u) -> dict:
 
 def _meta(request: Request) -> dict:
     ua = request.headers.get("User-Agent", "")[:200]
-    ip = (request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-          or (request.client.host if request.client else ""))
-    return {"device": ua, "ip": ip}
+    return {"device": ua, "ip": client_ip(request)}
 
 
 async def _auth_response(u: dict, request: Request) -> dict:
@@ -72,9 +91,14 @@ async def register(data: RegisterIn, request: Request):
 
 @router.post("/login", dependencies=[Depends(login_limit)])
 async def login(data: LoginIn, request: Request):
-    u = await users.find_one({"email": data.email.lower()})
+    email, ip = data.email.lower(), client_ip(request)
+    wait = _limited("login-fail", email, ip, LOGIN_FAILS)
+    if wait:
+        raise too_many(wait)
+    u = await users.find_one({"email": email})
     if not u or not verify_pw(data.password, u.get("pw", "")):
-        log.warning("failed login attempt for %s", data.email.lower())
+        _count("login-fail", email, ip)
+        log.warning("failed login attempt for %s", email)
         raise HTTPException(401, "Invalid email or password")
     if u.get("banned"):
         raise HTTPException(403, "This account has been suspended")
@@ -129,7 +153,12 @@ async def revoke_session(jti: str, user=Depends(get_current_user)):
 
 # ---- email OTP verification ----
 @router.post("/otp/request", dependencies=[Depends(otp_limit)])
-async def otp_request(data: OTPRequestIn):
+async def otp_request(data: OTPRequestIn, request: Request):
+    email, ip = data.email.lower(), client_ip(request)
+    wait = _limited("otp-send", email, ip, OTP_SENDS)
+    if wait:
+        raise too_many(wait)
+    _count("otp-send", email, ip)
     code = f"{random.SystemRandom().randint(0, 999999):06d}"
     await otps.update_one(
         {"email": data.email.lower()},
@@ -149,16 +178,21 @@ async def otp_request(data: OTPRequestIn):
     return out
 
 
-@router.post("/otp/verify", dependencies=[Depends(otp_limit)])
-async def otp_verify(data: OTPVerifyIn, request: Request):
-    email = data.email.lower()
+@router.post("/otp/verify", dependencies=[Depends(otp_verify_limit)])
+async def otp_verify(data: OTPVerifyIn, request: Request, authorization: str = Header(default="")):
+    email, ip = data.email.lower(), client_ip(request)
+    wait = _limited("otp-fail", email, ip, OTP_FAILS)
+    if wait:
+        raise too_many(wait)
     rec = await otps.find_one({"email": email})
     if not rec or rec["exp"] < time.time():
+        _count("otp-fail", email, ip)
         raise HTTPException(401, "Invalid or expired code")
     if rec.get("attempts", 0) >= 5:
         await otps.delete_one({"email": email})
-        raise HTTPException(429, "Too many attempts — request a new code")
+        raise HTTPException(429, "Too many attempts. Request a new code.")
     if not hmac.compare_digest(str(rec["code"]), str(data.code)):
+        _count("otp-fail", email, ip)
         await otps.update_one({"email": email}, {"$inc": {"attempts": 1}})
         raise HTTPException(401, "Invalid or expired code")
     u = await users.find_one({"email": email})
@@ -167,17 +201,48 @@ async def otp_verify(data: OTPVerifyIn, request: Request):
                "created_at": time.time()}
         res = await users.insert_one(doc)
         u = await users.find_one({"_id": res.inserted_id})
+    elif not u.get("verified") and token_owner(authorization[7:]) != str(u["_id"]):
+        # Someone proved they own this inbox without holding a login for the account
+        # (even an expired one). If the account was registered by someone else first
+        # (account pre-hijacking), that person's password and sessions must stop working.
+        await _claim_unverified(u, "the code we emailed you")
     await otps.delete_one({"email": email})
     await users.update_one({"_id": u["_id"]}, {"$set": {"verified": True}})
     u["verified"] = True
     return await _auth_response(u, request)
 
 
+async def _claim_unverified(u: dict, how: str) -> None:
+    """Hand an unverified account to whoever just proved they own its email."""
+    had_pw = bool(u.get("pw"))
+    if had_pw:
+        await users.update_one({"_id": u["_id"]}, {"$set": {"pw": ""}})
+        u["pw"] = ""
+    await sessions.revoke_all(str(u["_id"]))
+    log.warning("unverified account %s claimed by verified email owner", u["_id"])
+    if had_pw:
+        try:
+            await send_email(u["email"], "Your Merova Fit sign-in changed",
+                             f"<p>You just signed in with {how}. Your email wasn't verified yet, so we "
+                             "removed the password on this account and signed out other devices, in case "
+                             "someone else created it.</p><p>You can set a new password any time with "
+                             "\u201cForgot password\u201d.</p>")
+        except Exception as e:  # a failed notice must not block the sign-in
+            log.warning("claim notice email failed: %s", e)
+
+
 # ---- forgot / reset / change password ----
 @router.post("/forgot-password", dependencies=[Depends(reset_limit)])
-async def forgot_password(data: ForgotPasswordIn):
+async def forgot_password(data: ForgotPasswordIn, request: Request):
     """Email a reset link. Always returns ok so we never leak which emails exist."""
-    u = await users.find_one({"email": data.email.lower()})
+    email, ip = data.email.lower(), client_ip(request)
+    if peek_rate("reset-send", f"{email}|{ip}", *RESET_SENDS["pair"]):
+        raise too_many(peek_rate("reset-send", f"{email}|{ip}", *RESET_SENDS["pair"]))
+    # past the per-email ceiling we quietly skip sending, so nobody can tell
+    # (or use it to block the real owner's own reset)
+    flooded = peek_rate("reset-send", email, *RESET_SENDS["email"])
+    _count("reset-send", email, ip)
+    u = None if flooded else await users.find_one({"email": email})
     if u:
         token = random_token()
         await pw_resets.insert_one({
@@ -197,9 +262,15 @@ async def reset_password(data: ResetPasswordIn):
     rec = await pw_resets.find_one({"token_hash": hash_token(data.token)})
     if not rec:
         raise HTTPException(400, "Invalid or expired reset link")
+    exp = rec.get("expires_at")
+    if exp is not None and exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)  # Mongo hands datetimes back without a zone
+    if exp is None or exp < datetime.now(timezone.utc):
+        await pw_resets.delete_one({"_id": rec["_id"]})  # don't wait for the TTL sweep
+        raise HTTPException(400, "Invalid or expired reset link")
     await users.update_one({"_id": oid(rec["user_id"], "user id")},
-                           {"$set": {"pw": hash_pw(data.password)}})
-    await pw_resets.delete_one({"_id": rec["_id"]})
+                           {"$set": {"pw": hash_pw(data.password), "verified": True}})
+    await pw_resets.delete_many({"user_id": rec["user_id"]})  # every other link dies too
     await sessions.revoke_all(rec["user_id"])  # force re-login everywhere after a reset
     return {"ok": True}
 
@@ -211,11 +282,11 @@ async def change_password(data: ChangePasswordIn, user=Depends(get_current_user)
     await users.update_one({"_id": oid(user["id"], "user id")},
                            {"$set": {"pw": hash_pw(data.new_password)}})
     await sessions.revoke_all(user["id"])
-    return {"ok": True, "message": "Password changed — please sign in again."}
+    return {"ok": True, "message": "Password changed. Please sign in again."}
 
 
 # ---- social sign-in ----
-@router.post("/google")
+@router.post("/google", dependencies=[Depends(social_limit)])
 async def google(data: GoogleIn, request: Request):
     if not settings.GOOGLE_CLIENT_ID:
         raise HTTPException(503, "Google sign-in isn't set up yet")
@@ -233,8 +304,11 @@ async def google(data: GoogleIn, request: Request):
     return await _auth_response(u, request)
 
 
-@router.post("/apple")
+@router.post("/apple", dependencies=[Depends(social_limit)])
 async def apple(data: AppleIn, request: Request):
+    if not settings.APPLE_CLIENT_ID:
+        # without our own app id we can't check the token was issued for Merova Fit
+        raise HTTPException(503, "Apple sign-in isn't set up yet")
     try:
         claims = await verify_identity_token(data.id_token)
     except ValueError as e:
@@ -253,4 +327,10 @@ async def _upsert_social(email: str, name: str | None) -> dict:
         u = await users.find_one({"_id": res.inserted_id})
     if u.get("banned"):
         raise HTTPException(403, "This account has been suspended")
+    if not u.get("verified"):
+        # Google/Apple just proved this person owns the email. Lock out anyone who
+        # registered it first with a password, then mark the account verified.
+        await _claim_unverified(u, "Google or Apple")
+        await users.update_one({"_id": u["_id"]}, {"$set": {"verified": True}})
+        u["verified"] = True
     return u
